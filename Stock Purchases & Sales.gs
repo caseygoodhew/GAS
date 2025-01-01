@@ -1,10 +1,9 @@
-
-
 function ValidateStockPurchasesAndSales() {
 
   const data = initStockPurchaseAndSales();
   const { columns, rows, helper } = data;
 
+  // define the Rules to run
   const rules = [
     spsValidator_dateBelowIsLessThanOrEqual(data),
     spsValidator_eachEventIdIsUnique(data),

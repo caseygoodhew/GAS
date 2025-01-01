@@ -3,9 +3,9 @@ const initStockPurchaseAndSales = (sheetName) => {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 
   const startedAt = new Date();
-  
+
   // DEFINE THE COLUMN & ROW SPACE
-  const columns = [
+  const columns = initLabelledColumns(sheet, [
     'EVENT_ID',
     'DATE',
     'SYMBOL',
@@ -21,121 +21,37 @@ const initStockPurchaseAndSales = (sheetName) => {
     'SELL_VALUE',
     'VALUE_DELTA',
     'FORMAT_CODE',
-  ].reduce((o, v) => {
-    o[v] = v;
-    return o;
-  }, {});
-   
-  // MAP THE LABELED COLUMNS, COL NUMS AND HEADINGS (AND ERROR CHECK)
-  const rowValues = sheet.getRange(1, 1, 2, sheet.getDataRange().getNumColumns()).getValues();
-  const labelRowValues = rowValues[0];
-  const headingRowValues = rowValues[1];
-  const colLabelToNumMap = {};
-  const colNumToLabelMap = {};
-  const colHeadingsMap = {};
-
-  labelRowValues.forEach((key, index) => {
-    if (columns[key]) {
-      colLabelToNumMap[key] = index + 1;
-      colNumToLabelMap[index + 1] = key;
-      colHeadingsMap[key] = headingRowValues[index];
-    }
-  });
-
-  const missingColumns = Object.keys(columns).filter(key => !colLabelToNumMap[key]);
-
-  if (missingColumns.length !== 0) {
-    throw new Error(`Missing labeled columns ['${missingColumns.join(', ')}'] in sheet '${sheetName}'`)
-  }
+  ]);
 
   // GET MAGIC COORDINATES
-  const magicCoordinates = {};
-  const formatColValues = sheet.getRange(
-    1, 
-    colLabelToNumMap[columns.FORMAT_CODE], 
-    sheet.getDataRange().getNumRows(), 
-    1
-  ).getValues().flat();
-
-  // e.g. {lastRun[13,4]}
-  const re = /{([a-z]+)\[([0-9]+)(,([0-9]+))*\]}/i;
-
-  formatColValues.forEach((value) => {
-    const match = value.match(re);
-    if (match) {
-      magicCoordinates[match[1]] = {
-        row: parseInt(match[2], 10),
-        col: match[4] == null ? match[4] : parseInt(match[4], 10),
-      }
+  const [dataRangeCoordinates, reporting] = initMagicCoordinates(
+    sheet, 
+    columns.colLabelToNumMap[columns.FORMAT_CODE], 
+      {
+        dataStart: 'start',
+        dataEnd: 'end'
+      }, {
+      reportLastRun: 'lastRun', 
+      reportDuration: 'duration', 
+      reportDataRange: 'dataRange', 
+      reportStatus: 'status' ,
+      checkSum: 'checkSum',
+      realtimeCheckSum: 'realtimeCheckSum'
     }
-  });
-
-  const validateMagicCoordinateHasRow = (key) => {
-    if (!magicCoordinates[key]) {
-      throw new Error(`Expected to find magic coordinate with label "${key}"`);
-    }
-
-    if (magicCoordinates[key].row == null) {
-      throw new Error(`Expected to find magic coordinate with label "${key}" and row value defined`);
-    }
-  }
-
-  const validateMagicCoordinateHasRowAndCol = (key) => {
-    validateMagicCoordinateHasRow(key);
-
-    if (magicCoordinates[key].col == null) {
-      throw new Error(`Expected to find magic coordinate with label "${key}" and col value defined`);
-    }
-  }
-
-  // DEFINE THE DATA RANGE THAT WE'RE WORKING WITH
-  ['dataStart', 'dataEnd'].forEach(validateMagicCoordinateHasRowAndCol);
-  
+  )
+ 
   const rows = {
-    first: magicCoordinates.dataStart.row,
-    last: magicCoordinates.dataEnd.row
+    first: dataRangeCoordinates.start.row,
+    last: dataRangeCoordinates.end.row
   };
 
-  const dataRangeCoordinates = {
-    start: magicCoordinates.dataStart,
-    end: magicCoordinates.dataEnd
-  };
-
-  // DEFINE THE REPORT CELLS WE'RE WORKING WITH
-  [
-    'reportLastRun', 
-    'reportDuration', 
-    'reportDataRange', 
-    'reportStatus', 
-    'checkSum',
-    'realtimeCheckSum'
-  ].forEach(validateMagicCoordinateHasRowAndCol);
-  
-  const reporting = {
-    lastRun: magicCoordinates.reportLastRun,
-    duration: magicCoordinates.reportDuration,
-    dataRange: magicCoordinates.reportDataRange,
-    status: magicCoordinates.reportStatus,
-    checkSum: magicCoordinates.checkSum,
-    realtimeCheckSum: magicCoordinates.realtimeCheckSum
-  };
-
-  const helper = makeHelper(sheet, colLabelToNumMap);
+  const helper = makeHelper(sheet, columns.colLabelToNumMap);
   const statusCell = helper.getCell(reporting.status.col, reporting.status.row);
   const checkSumCell = helper.getCell(reporting.checkSum.col, reporting.checkSum.row);
 
   // SETUP DATA OBJECT
-  const columnIndicies = Object.values(colLabelToNumMap);
   const data = { 
-    columns: {
-      ...columns,
-      colNumToLabelMap,
-      colLabelToNumMap,
-      keys: Object.keys(columns),
-      first: Math.min(...columnIndicies),
-      last: Math.max(...columnIndicies),
-      headingMap: colHeadingsMap
-    }, 
+    columns, 
     rows, 
     reporting,
   };
@@ -215,5 +131,153 @@ const initStockPurchaseAndSales = (sheetName) => {
       ...helper,
       ...fns 
     }
+  };
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+const initMagicCoordinates = (sheet, colNum, ...keySets) => {
+  const magicCoordinates = {};
+  const formatColValues = sheet.getRange(
+    1, 
+    colNum, 
+    sheet.getDataRange().getNumRows(), 
+    1
+  ).getValues().flat();
+
+  // e.g. {lastRun[13,4]}
+  const re = /{([a-z]+)\[([0-9]+)(,([0-9]+))*\]}/i;
+
+  formatColValues.forEach((value) => {
+    const match = value.match(re);
+    if (match) {
+      magicCoordinates[match[1]] = {
+        row: parseInt(match[2], 10),
+        col: match[4] == null ? match[4] : parseInt(match[4], 10),
+      }
+    }
+  });
+
+  const validateMagicCoordinateHasRowAndCol = (key) => {
+    if (!magicCoordinates[key]) {
+      throw new Error(`Expected to find magic coordinate with label "${key}"`);
+    }
+
+    if (magicCoordinates[key].row == null) {
+      throw new Error(`Expected to find magic coordinate with label "${key}" and row value defined`);
+    }
+
+    if (magicCoordinates[key].col == null) {
+      throw new Error(`Expected to find magic coordinate with label "${key}" and col value defined`);
+    }
+  }
+
+  const getKeys = inKey => {
+    if (typeof inKey === 'string') {
+      return [[inKey, inKey]];
+    }
+
+    if (typeof inKey !== 'object') {
+      throw new Error(`Expected key to be either a string or an object, got '${typeof inKey}'`);
+    }
+
+    return Object.keys(inKey).map(key => [key, inKey[key]]);
+  }
+
+  return keySets.map(keySet => (Array.isArray(keySet) ? keySet : [keySet]).reduce((obj, inKey) => {
+      const allKeys = getKeys(inKey);
+      allKeys.forEach(keys => {
+        const [mcKey, outKey] = keys;
+        validateMagicCoordinateHasRowAndCol(mcKey);
+        obj[outKey] = magicCoordinates[mcKey];
+      })
+      return obj;
+  }, {}));
+
+  // DEFINE THE DATA RANGE THAT WE'RE WORKING WITH
+//  ['dataStart', 'dataEnd'].forEach(validateMagicCoordinateHasRowAndCol);
+  
+//  const rows = {
+//    first: magicCoordinates.dataStart.row,
+//    last: magicCoordinates.dataEnd.row
+//  };
+
+//  const dataRangeCoordinates = {
+//    start: magicCoordinates.dataStart,
+//    end: magicCoordinates.dataEnd
+//  };
+
+  // DEFINE THE REPORT CELLS WE'RE WORKING WITH
+//  [
+//    'reportLastRun', 
+//    'reportDuration', 
+//    'reportDataRange', 
+//    'reportStatus', 
+//    'checkSum',
+//    'realtimeCheckSum'
+//  ].forEach(validateMagicCoordinateHasRowAndCol);
+  
+//  const reporting = {
+//    lastRun: magicCoordinates.reportLastRun,
+//    duration: magicCoordinates.reportDuration,
+//    dataRange: magicCoordinates.reportDataRange,
+//    status: magicCoordinates.reportStatus,
+//    checkSum: magicCoordinates.checkSum,
+//    realtimeCheckSum: magicCoordinates.realtimeCheckSum
+//  };
+}
+
+// Requires that the first 2 rows of a sheet represent the labelled columns
+// [1] | COL_NAMES | IN_CAMEL_UPPER |
+// [2] | Col Names | In Friendly Case |
+const initLabelledColumns = (sheet, expectedLabels) => {
+
+  const sheetName = sheet.getSheetName();
+
+  const columns = expectedLabels.reduce((o, v) => {
+    o[v] = v;
+    return o;
+  }, {});
+
+  const rowValues = sheet.getRange(1, 1, 2, sheet.getDataRange().getNumColumns()).getValues();
+  // internal
+  const labelRowValues = rowValues[0];
+  const headingRowValues = rowValues[1];
+  
+
+  // returned
+  const colLabelToNumMap = {};
+  const colNumToLabelMap = {};
+  const colHeadingsMap = {};
+
+  labelRowValues.forEach((key, index) => {
+    if (columns[key]) {
+      colLabelToNumMap[key] = index + 1;
+      colNumToLabelMap[index + 1] = key;
+      colHeadingsMap[key] = headingRowValues[index];
+    }
+  });
+
+  const missingColumns = Object.keys(columns).filter(key => !colLabelToNumMap[key]);
+
+  if (missingColumns.length !== 0) {
+    throw new Error(`Missing labeled columns ['${missingColumns.join(', ')}'] in sheet '${sheetName}'`)
+  }
+
+  const columnIndicies = Object.values(colLabelToNumMap);
+
+  return {
+    ...columns,
+    colNumToLabelMap,
+    colLabelToNumMap,
+    keys: Object.keys(columns),
+    first: Math.min(...columnIndicies),
+    last: Math.max(...columnIndicies),
+    headingMap: colHeadingsMap
   };
 }
