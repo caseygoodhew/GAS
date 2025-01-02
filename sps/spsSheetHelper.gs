@@ -52,6 +52,36 @@ const initStockPurchaseAndSales = (sheetName) => {
   const statusCell = helper.getCell(reporting.status.col, reporting.status.row);
   const checkSumCell = helper.getCell(reporting.checkSum.col, reporting.checkSum.row);
 
+  const STATUSUPDATER = initStatusUpdater(sheet, {
+    timestamp: reporting.lastRun,
+    duration: reporting.duration,
+    dataRange: reporting.dataRange,
+    status: reporting.status,
+    statusFormula: {
+      cell: reporting.status,
+      setter: 'setFormula',
+    },
+    validationRunning: {
+      cell: reporting.status,
+      setter: 'setRichTextValue',
+      formatter: (status) => {
+        const dimmed = SpreadsheetApp.newTextStyle()
+                    .setUnderline(false)
+                    .setBold(false)
+                    .setItalic(true)
+                    .setForegroundColor('#999999')
+                    .build();
+
+        const intro = 'Running validation script';
+
+        return SpreadsheetApp.newRichTextValue()
+                            .setText(`${intro}\n\n${status}`)
+                            .setTextStyle(0, intro.length, dimmed)
+                            .build();
+      }
+    }, 
+  });
+
   // SETUP DATA OBJECT
   const data = { 
     columns, 
@@ -59,19 +89,7 @@ const initStockPurchaseAndSales = (sheetName) => {
     reporting,
   };
 
-  const updateRunStats = (() => {
-    const lastRunCell = sheet.getRange(reporting.lastRun.row, reporting.lastRun.col);
-    const durationCell = sheet.getRange(reporting.duration.row, reporting.duration.col);
-    const dataRangeCell = sheet.getRange(reporting.dataRange.row, reporting.dataRange.col);
-
-    return ({ lastRun, duration, dataRange }) => {
-      lastRunCell.setValue(lastRun ?? '');
-      durationCell.setValue(duration ?? '');
-      dataRangeCell.setValue(dataRange ?? '');
-    }
-  })();
-
-  updateRunStats({});
+  STATUSUPDATER.clearAll();
   
   // DEFINE HELPER FUNCTIONS SPECIFIC TO THIS SHEET
   const fns = {
@@ -83,29 +101,10 @@ const initStockPurchaseAndSales = (sheetName) => {
       return action !== 'SELL';
     },
 
-    updateRunStatus: (() => {
+    updateRunStatus: (status) => {
+      STATUSUPDATER.updateOne('validationRunning', status)
+    },
       
-      const dimmed = SpreadsheetApp.newTextStyle()
-                    .setUnderline(false)
-                    .setBold(false)
-                    .setItalic(true)
-                    .setForegroundColor('#999999')
-                    .build();
-
-      const intro = 'Running validation script'
-      
-      return (status) => {
-        console.log(status);
-      
-        const value = SpreadsheetApp.newRichTextValue()
-                          .setText(`${intro}\n\n${status}`)
-                          .setTextStyle(0, intro.length, dimmed)
-                          .build();
-
-        statusCell.setRichTextValue(value);
-      }
-    })(),
-
     updateFinalStatus: (finalStatus) => {
       const completedAt = new Date();
       
@@ -118,16 +117,15 @@ const initStockPurchaseAndSales = (sheetName) => {
 
       statusCell.setFormula(`=if(${a1_left}=${a1_right}, "${finalStatus ?? 'OK!'}", "Data has changed since you last ran Validate")`)
 
-      updateRunStats({
-        lastRun: completedAt,
+      STATUSUPDATER.update({
+        timestamp: completedAt,
         duration: `${Math.round((completedAt - startedAt)/100)/10}s`,
         dataRange: `${helper.toA1Notation(dataRangeCoordinates.start.col, dataRangeCoordinates.start.row)}:${helper.toA1Notation(dataRangeCoordinates.end.col, dataRangeCoordinates.end.row)}`
       })
     }
   }
 
-  // RETURN
-  
+  // RETURN 
   return {
     ...data,
     helper: { 
@@ -136,3 +134,99 @@ const initStockPurchaseAndSales = (sheetName) => {
     }
   };
 }
+
+const initCellUpdater = (() => {
+  const cellConfig = (resolvedCell, cellMapItem) => {
+    
+    let makeSetter;
+
+    if (cellMapItem.setter == null) {
+      makeSetter = (cell) => cell.setValue;
+    } else if (typeof cellMapItem.setter === 'string') {
+      if (typeof resolvedCell[cellMapItem.setter] === 'function') {
+        makeSetter = (cell) => cell[cellMapItem.setter];
+      } else {
+        throw new Error(`Where the setter is a string, it must the name of a function of a cell (range). Got '${cellMapItem.setter}'`);
+      }
+    } else if (typeof cellMapItem.setter === 'function') { 
+      makeSetter = cellMapItem.setter;
+    } else {
+      throw new Error(`Unexpected typeof setter === '${typeof setter}'`);
+    }
+    
+    return {
+      cell: resolvedCell,
+      formatter: cellMapItem.formatter ?? (v => v),
+      setter: makeSetter(resolvedCell)
+    }
+  }
+
+  const resolveCells = (sheet, cellMap) => {
+    
+    return Object.keys(cellMap).reduce((object, key) => {
+      const fn = () => {
+        const cell = cellMap[key].cell || cellMap[key];
+        
+        if (cell == null) {
+          throw new Error(`Cell with key ${key} is nullish and cannot be resolved`)
+        }
+
+        // an actual cell
+        if (isRange(cell)) {
+          return cellConfig(cell, cellMap[key]);
+        }
+
+        // row / column num
+        if (typeof cell.row === 'number' && typeof cell.col === 'number') {
+          return cellConfig(sheet.getRange(cell.row, cell.col), cellMap[key]);
+        }
+
+        // assume that it's a range that can be understood by sheet
+        try {
+          return cellConfig(sheet.getRange(cell), cellMap[key]);
+        } catch (e) {
+          throw new Error(`Tried to resolve cell with value '${cell}', but caught exception with message'${e.message}'`);
+        }
+      }
+
+      object[key] = fn();
+      return object;
+    }, {});
+  }
+
+  return (sheet, cellMap) => { 
+    cellMap = resolveCells(sheet, cellMap);
+
+    const fns = {
+      clearAll: () => {
+        Object.keys(cellMap).forEach(key => fns.clearOne(key));
+      },
+
+      clearOne: (key) => {
+        fns.updateOne(key, '');
+      },
+      
+      update: (map) => {
+        Object.keys(map).forEach(key => {
+          fns.updateOne(key, map[key]);
+        });
+      },
+
+      updateOne: (key, value) => {
+        if (!cellMap[key]) {
+          throw new Error(`Could not find declared cell with label ${key}`);
+        }
+
+        const formatted = cellMap[key].formatter(value);
+
+        const valueToLog = typeof value === 'string' ? value : (typeof formatted === 'string' ? formatted : formatted.toString());
+
+        console.log(`${key}: ${valueToLog}`);
+
+        cellMap[key].setter(formatted);
+      }
+    }
+
+    return fns;
+  }
+})();
