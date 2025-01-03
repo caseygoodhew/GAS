@@ -40,37 +40,39 @@ const initStockPurchaseAndSales = (sheetName) => {
     reportDataRange: 'dataRange', 
     reportStatus: 'status' ,
     checkSum: 'checkSum',
-    realtimeCheckSum: 'realtimeCheckSum'
+    realtimeCheckSum: 'realtimeCheckSum',
   });
  
+  // SETUP THE CELL UPDATER
+  const cellUpdater = initCellUpdater(sheet, {
+    ...clearAllOnInitCellUpdater(),
+    ...timestampCellUpdater(reporting.lastRun),
+    ...durationCellUpdater(reporting.duration),
+    ...validationCellUpdater(reporting.status),
+    ...checksumCellUpdater(reporting.checkSum),
+    ...dataRangeCellUpdater(reporting.dataRange),
+    ...finalValidationStatusWithCheckSumComparatorCellUpdater(
+      reporting.status, 
+      reporting.checkSum, 
+      reporting.realtimeCheckSum
+    )
+  });
+
+  // SETUP DATA OBJECT
+
   const rows = {
     first: dataRangeCoordinates.start.row,
     last: dataRangeCoordinates.end.row
   };
 
-  const helper = makeHelper(sheet, columns.colLabelToNumMap);
-  const statusCell = helper.getCell(reporting.status.col, reporting.status.row);
-  const checkSumCell = helper.getCell(reporting.checkSum.col, reporting.checkSum.row);
-
-  const STATUSUPDATER = initCellUpdater(sheet, {
-    ...timestampCellUpdater(reporting.lastRun),
-    ...durationCellUpdater(reporting.duration),
-    ...validationCellUpdater(reporting.status),
-    dataRange: reporting.dataRange,
-    statusFormula: {
-      cell: reporting.status,
-      setter: 'setFormula',
-    }
-  });
-
-  // SETUP DATA OBJECT
   const data = { 
     columns, 
     rows, 
     reporting,
   };
 
-  STATUSUPDATER.clearAll();
+  // SETUP THE HELPER + EXTENSION FUNCTIONS
+  const helper = makeHelper(sheet, columns.colLabelToNumMap);
   
   // DEFINE HELPER FUNCTIONS SPECIFIC TO THIS SHEET
   const fns = {
@@ -83,24 +85,18 @@ const initStockPurchaseAndSales = (sheetName) => {
     },
 
     updateRunStatus: (status) => {
-      STATUSUPDATER.event('validating', status)
+      cellUpdater.event('validating', { message: status })
     },
       
     updateFinalStatus: (status) => {
-      const dataRange = helper.getRange(dataRangeCoordinates.start.col, dataRangeCoordinates.start.row, dataRangeCoordinates.end.col, dataRangeCoordinates.end.row);
+      const dataRange = helper.getRange(
+        dataRangeCoordinates.start.col, 
+        dataRangeCoordinates.start.row, 
+        dataRangeCoordinates.end.col, 
+        dataRangeCoordinates.end.row
+      );
       
-      checkSumCell.setValue(CHECKSUM(dataRange.getValues()));
-      
-      const a1_left = helper.toA1Notation(reporting.checkSum.col, reporting.checkSum.row);
-      const a1_right = helper.toA1Notation(reporting.realtimeCheckSum.col, reporting.realtimeCheckSum.row);
-
-      statusCell.setFormula(`=if(${a1_left}=${a1_right}, "${status ?? 'OK!'}", "Data has changed since you last ran Validate")`)
-
-      STATUSUPDATER.update({
-        dataRange: `${helper.toA1Notation(dataRangeCoordinates.start.col, dataRangeCoordinates.start.row)}:${helper.toA1Notation(dataRangeCoordinates.end.col, dataRangeCoordinates.end.row)}`
-      });
-
-      STATUSUPDATER.event('complete')
+      cellUpdater.event('complete', { dataRange, message: status });
     }
   }
 
@@ -113,9 +109,3 @@ const initStockPurchaseAndSales = (sheetName) => {
     }
   };
 }
-
-
-
-
-
-

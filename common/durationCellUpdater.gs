@@ -8,7 +8,7 @@ const durationCellUpdater = (cellRef) => {
   return {
     [myKey]: {
       cell: cellRef,
-      onEvent: ({eventName, updater}) => {
+      onEvent: (eventName, updater) => {
         if (![beginOnEventName, completeOnEventName].includes(eventName)) {
           return;
         }

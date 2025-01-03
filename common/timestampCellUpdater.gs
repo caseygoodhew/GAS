@@ -4,7 +4,7 @@ const timestampCellUpdater = (cellRef) => {
   return {
     [myKey]: {
       cell: cellRef,
-      onEvent: ({eventName, updater}) => {
+      onEvent: (eventName, updater) => {
         if (eventName !== triggerOnEventName) {
           return;
         }

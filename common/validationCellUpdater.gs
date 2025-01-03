@@ -21,12 +21,10 @@ const validationCellUpdater = (cellRef) => {
                             .setTextStyle(0, intro.length, dimmed)
                             .build();
       },
-      onEvent: ({eventName, args, updater}) => {
+      onEvent: (eventName, updater, { message }) => {
         if (triggerOnEventName !== eventName) {
           return;
         }
-
-        const [message] = args;
 
         updater.updateOne(myKey, message);
       }

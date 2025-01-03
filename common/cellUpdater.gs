@@ -33,7 +33,12 @@ const initCellUpdater = (() => {
     
     return Object.keys(cellMap).reduce((object, key) => {
       const fn = () => {
-        const cell = cellMap[key].cell || cellMap[key];
+        const cell = cellMap[key].cell ?? cellMap[key];
+
+        if (cell === false) {
+          // if the cell is explicitly false, we'll mock it as this is an event-only condition
+          return cellConfig({ setValue: () => {} }, cellMap[key])
+        }
         
         if (cell == null) {
           throw new Error(`Cell with key ${key} is nullish and cannot be resolved`)
@@ -94,9 +99,13 @@ const initCellUpdater = (() => {
         cellMap[key].setter(formatted);
       },
 
-      event: (eventName, ...args) => {
+      event: (eventName, args) => {
+        if (args != null && typeof args !== 'object') {
+          throw new Error(`Expected event args to either be undefined or an object, got '${typeof args}'`)
+        }
+        
         Object.keys(cellMap).forEach(key => {
-          cellMap[key].onEvent({eventName, args, updater: fns});
+          cellMap[key].onEvent(eventName, fns, args ?? {});
         })
       }
     }

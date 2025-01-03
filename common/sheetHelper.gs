@@ -94,24 +94,7 @@ const makeHelper = (sheet, labeledColumnMap) => {
     },
 
     toColLetter: (colNum) => {
-      const minColNum = 1;
-      const maxColNum = 18278;
-      
-      // Check for invalid indices
-      if (colNum < minColNum || colNum > maxColNum) {
-        throw new Error(`Invalid column. Got ${column}, expected within the range of ${minColNum} to ${maxColNum}`)
-      }
-      
-      var columnLetter = "";
-      
-      // Convert the index into a column letter
-      while (colNum > 0) {
-        var remainder = (colNum - 1) % 26;
-        columnLetter = String.fromCharCode(65 + remainder) + columnLetter;
-        colNum = Math.floor((colNum - 1) / 26);
-      }
-      
-      return columnLetter;
+      return toColLetter(colNum);
     },
 
     getRange: (col, row, toCol, toRow) => {
@@ -168,8 +151,7 @@ const makeHelper = (sheet, labeledColumnMap) => {
     },
 
     toA1Notation: (colNumOrLetter, rowNum) => {
-      const colLetter = typeof colNumOrLetter === 'string' ? colNumOrLetter : fns.toColLetter(colNumOrLetter);
-      return `${colLetter}${rowNum}`;
+      return toA1Notation(colNumOrLetter, rowNum);
     },
 
     filterToRangeList: (range, value) => {
