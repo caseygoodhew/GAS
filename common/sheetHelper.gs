@@ -13,35 +13,11 @@ const makeHelper = (sheet, labeledColumnMap) => {
     },
 
     isEmpty: (valueOrCell) => {
-      const isCell = typeof valueOrCell === 'object' && typeof valueOrCell.getValue === 'function'; 
-      
-      const value = isCell ? valueOrCell.getValue() : valueOrCell;
+      return isEmpty(valueOrCell);
+    },
 
-      if (value == null) {
-        return true;
-      } 
-      
-      if (typeof value === 'string') {
-        return value.length === 0;
-      }
-
-      if (Number(value) === value) {
-        return false;
-      }
-
-      if (value instanceof Date && !isNaN(value.valueOf())) {
-        return false;
-      }
-
-      if (Array.isArray(value)) {
-        return false;
-      }
-
-      if (typeof value === 'object') {
-        return false;
-      }
-
-      throw new Error(`Unhandled type check in isEmpty (value is ${value}) (typeof is ${typeof value})`)
+    isDate: (valueOrCell) => {
+      return isDate(valueOrCell);
     },
     
     resolveToColNum: (col) => {

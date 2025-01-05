@@ -17,7 +17,7 @@ function ValidateStockPurchasesAndSales() {
     spsValidator_allEventsArePresent(data)
   ];
 
-  const dataRange = helper.getRange(columns.first, rows.first, columns.last, rows.last);
+  const dataRange = helper.getFullDataRange();
   const colOffsets = columns.keys.reduce((map, key) => {
     map[key] = columns.colLabelToNumMap[key] - columns.first + 1;
     return map;

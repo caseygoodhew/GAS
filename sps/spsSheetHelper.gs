@@ -60,14 +60,14 @@ const initStockPurchaseAndSales = (sheetName) => {
 
   // SETUP DATA OBJECT
 
-  const rows = {
+  /*const rows = {
     first: dataRangeCoordinates.start.row,
     last: dataRangeCoordinates.end.row
-  };
+  };*/
 
   const data = { 
     columns, 
-    rows, 
+    //rows, 
     reporting,
   };
 
@@ -88,7 +88,16 @@ const initStockPurchaseAndSales = (sheetName) => {
       cellUpdater.event('validating', { message: status })
     },
 
-    getDataRange: () => {
+    getFullDataRange: () => {
+      return helper.getRange(
+        columns.first, 
+        dataRangeCoordinates.start.row, 
+        columns.last, 
+        dataRangeCoordinates.end.row
+      );
+    },
+    
+    getActiveDataRange: () => {
       return helper.getRange(
         dataRangeCoordinates.start.col, 
         dataRangeCoordinates.start.row, 
@@ -98,7 +107,7 @@ const initStockPurchaseAndSales = (sheetName) => {
     }, 
       
     updateFinalStatus: (status) => {
-      const dataRange = fns.getDataRange();
+      const dataRange = fns.getActiveDataRange();
       cellUpdater.event('complete', { dataRange, message: status });
     }
   }

@@ -33,3 +33,46 @@ const toA1Notation = (colNumOrLetter, rowNum) => {
   const colLetter = typeof colNumOrLetter === 'string' ? colNumOrLetter : toColLetter(colNumOrLetter);
   return `${colLetter}${rowNum}`;
 }
+
+const asValue = (valueOrCell) => {
+  const isCell = typeof valueOrCell === 'object' && typeof valueOrCell.getValue === 'function'; 
+    
+  return isCell ? valueOrCell.getValue() : valueOrCell;
+}
+
+const isEmpty = (valueOrCell) => {
+  const value = asValue(valueOrCell);
+
+  if (value == null) {
+    return true;
+  } 
+  
+  if (typeof value === 'string') {
+    return value.length === 0;
+  }
+
+  if (Number(value) === value) {
+    return false;
+  }
+
+  if (value instanceof Date && !isNaN(value.valueOf())) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return false;
+  }
+
+  if (typeof value === 'object') {
+    return false;
+  }
+
+  throw new Error(`Unhandled type check in isEmpty (value is ${value}) (typeof is ${typeof value})`)
+}
+
+const isDate = (valueOrCell) => {
+  const value = asValue(valueOrCell);
+  return value instanceof Date && !isNaN(value.valueOf())
+}
+
+
