@@ -1,4 +1,4 @@
-const durationCellUpdater = (cellRef) => {
+const cellUpdater_duration = (cellRef) => {
   const beginOnEventName = 'init';
   const completeOnEventName = 'complete';
   const myKey = '__duration';

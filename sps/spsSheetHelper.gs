@@ -45,13 +45,13 @@ const initStockPurchaseAndSales = (sheetName) => {
  
   // SETUP THE CELL UPDATER
   const cellUpdater = initCellUpdater(sheet, {
-    ...clearAllOnInitCellUpdater(),
-    ...timestampCellUpdater(reporting.lastRun),
-    ...durationCellUpdater(reporting.duration),
-    ...validationCellUpdater(reporting.status),
-    ...checksumCellUpdater(reporting.checkSum),
-    ...dataRangeCellUpdater(reporting.dataRange),
-    ...finalValidationStatusWithCheckSumComparatorCellUpdater(
+    ...cellUpdater_clearAllOnInit(),
+    ...cellUpdater_timestamp(reporting.lastRun),
+    ...cellUpdater_duration(reporting.duration),
+    ...cellUpdater_validation(reporting.status),
+    ...cellUpdater_checksum(reporting.checkSum),
+    ...cellUpdater_dataRange(reporting.dataRange),
+    ...cellUpdater_finalValidationStatusWithCheckSumComparator(
       reporting.status, 
       reporting.checkSum, 
       reporting.realtimeCheckSum

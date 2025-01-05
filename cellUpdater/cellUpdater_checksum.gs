@@ -1,4 +1,4 @@
-const checksumCellUpdater = (cellRef) => {
+const cellUpdater_checksum = (cellRef) => {
   const triggerOnEventName = 'complete';
   const myKey = '__checksum';
   return {

@@ -1,4 +1,4 @@
-const finalValidationStatusWithCheckSumComparatorCellUpdater = (cellRef, checkSumCellRef, realtimeCheckSumCellRef) => {
+const cellUpdater_finalValidationStatusWithCheckSumComparator = (cellRef, checkSumCellRef, realtimeCheckSumCellRef) => {
   const triggerOnEventName = 'complete';
   const myKey = '__checksum';
   return {

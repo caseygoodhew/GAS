@@ -1,4 +1,4 @@
-const validationCellUpdater = (cellRef) => {
+const cellUpdater_validation = (cellRef) => {
   const triggerOnEventName = 'validating';
   const myKey = '__validation';
 

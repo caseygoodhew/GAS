@@ -1,4 +1,4 @@
-const clearAllOnInitCellUpdater = () => {
+const cellUpdater_clearAllOnInit = () => {
   const triggerOnEventName = 'initialize';
   const myKey = '__clearAllOnInit';
   return {

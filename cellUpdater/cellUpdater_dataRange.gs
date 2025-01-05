@@ -1,4 +1,4 @@
-const dataRangeCellUpdater = (cellRef) => {
+const cellUpdater_dataRange = (cellRef) => {
   const triggerOnEventName = 'complete';
   const myKey = '__dataRange';
   return {

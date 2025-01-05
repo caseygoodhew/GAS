@@ -1,4 +1,4 @@
-const timestampCellUpdater = (cellRef) => {
+const cellUpdater_timestamp = (cellRef) => {
   const triggerOnEventName = 'complete';
   const myKey = '__timestamp';
   return {
