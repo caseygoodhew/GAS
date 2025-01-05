@@ -88,16 +88,16 @@ const initStockPurchaseAndSales = (sheetName) => {
       cellUpdater.event('validating', { message: status })
     },
 
-    getFullDataRange: () => {
+    getFormatCodeRange: () => {
       return helper.getRange(
-        columns.first, 
+        columns[columns.FORMAT_CODE], 
         dataRangeCoordinates.start.row, 
-        columns.last, 
+        columns[columns.FORMAT_CODE], 
         dataRangeCoordinates.end.row
       );
     },
     
-    getActiveDataRange: () => {
+    getDataRange: () => {
       return helper.getRange(
         dataRangeCoordinates.start.col, 
         dataRangeCoordinates.start.row, 
@@ -107,7 +107,7 @@ const initStockPurchaseAndSales = (sheetName) => {
     }, 
       
     updateFinalStatus: (status) => {
-      const dataRange = fns.getActiveDataRange();
+      const dataRange = fns.getDataRange();
       cellUpdater.event('complete', { dataRange, message: status });
     }
   }

@@ -14,9 +14,28 @@ const cellUpdater_duration = (cellRef) => {
         }
 
         if (eventName === beginOnEventName) {
-          timer = new Date();
+          startedAt = new Date();
         } else if (eventName === completeOnEventName) {
-          updater.updateOne(myKey, `${Math.round((new Date() - startedAt)/100)/10}s`);
+          const time = {};
+          let seconds = (new Date() - startedAt)/1000;
+
+          if (seconds < 60) {
+            time.seconds = Math.round(seconds * 10)/10;
+          } else {
+            seconds = Math.round(seconds);
+            time.minutes = Math.floor(seconds / 60);
+            time.seconds = seconds - (time.minutes * 60);
+          }
+          
+          const parts = [];
+
+          if (time.minutes) {
+            parts.push(`${time.minutes}m`);
+          }
+
+          parts.push(`${time.seconds}s`);
+          
+          updater.updateOne(myKey, parts.join(' '));
         }
       }
     }

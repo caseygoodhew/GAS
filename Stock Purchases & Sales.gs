@@ -17,9 +17,9 @@ function ValidateStockPurchasesAndSales() {
     spsValidator_allEventsArePresent(data)
   ];
 
-  const dataRange = helper.getFullDataRange();
+  const dataRange = helper.getDataRange();
   const colOffsets = columns.keys.reduce((map, key) => {
-    map[key] = columns.colLabelToNumMap[key] - columns.first + 1;
+    map[key] = columns.colLabelToNumMap[key] - columns.first;
     return map;
   }, {});
 
@@ -135,7 +135,7 @@ const clearExistingValidations = ({ dataRange, helper, columns, colOffsets, repo
     }
   });
 
-  const formatCodeRange = helper.getColFromRange(dataRange, colOffsets[columns.FORMAT_CODE])
+  const formatCodeRange = helper.getFormatCodeRange()
   formatCodeRange.clearContent();
 
   const statusCell = helper.getCell(reporting.status.col, reporting.status.row);

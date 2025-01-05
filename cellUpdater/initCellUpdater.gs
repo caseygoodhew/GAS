@@ -68,6 +68,7 @@ const initCellUpdater = (() => {
   }
 
   return (sheet, cellMap) => { 
+    
     cellMap = resolveCells(sheet, cellMap);
 
     const fns = {
