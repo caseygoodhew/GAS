@@ -87,15 +87,18 @@ const initStockPurchaseAndSales = (sheetName) => {
     updateRunStatus: (status) => {
       cellUpdater.event('validating', { message: status })
     },
-      
-    updateFinalStatus: (status) => {
-      const dataRange = helper.getRange(
+
+    getDataRange: () => {
+      return helper.getRange(
         dataRangeCoordinates.start.col, 
         dataRangeCoordinates.start.row, 
         dataRangeCoordinates.end.col, 
         dataRangeCoordinates.end.row
       );
+    }, 
       
+    updateFinalStatus: (status) => {
+      const dataRange = fns.getDataRange();
       cellUpdater.event('complete', { dataRange, message: status });
     }
   }
