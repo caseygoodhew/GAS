@@ -16,4 +16,37 @@ function CHECKSUM(values) {
   }
   return txtHash;
 };
+
+function SHEETNAME() {
+  return SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getName();
+}
+
+function REFRESH_A1_SEED() {
+  const range = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange(1, 1);
+
+  range.setValue(RAND_STRING(6));
+}
+
+function RAND_STRING(length) {
+  const arr = [];
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   
+  for (let i = 0; i < length; i++) { 
+    arr.push(chars.charAt(Math.floor(Math.random()*chars.length)));
+  }
+  
+  return arr.join('');
+}
+
+function FORCE_EXCHANGE_NOW_DATE_REFRESH() {
+   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Exchanges')
+   const range = sheet.getRange(6, 4);
+
+  range.setValue(new Date());
+}
+
+function RESET_DATE_TO_REF_EXCHANGE() {
+  const range = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange(2, 5);
+
+  range.setFormula("=Exchanges!D1");
+}

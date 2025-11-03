@@ -1,5 +1,5 @@
 const initStockPurchaseAndSales = (sheetName) => {
-  sheetName = sheetName ?? 'TEST';
+  sheetName = sheetName ?? 'Stock Purchases & Sales';
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 
   const startedAt = new Date();
