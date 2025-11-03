@@ -30,6 +30,8 @@ function charlesSchwabTransactionHistoryReaderConfig() {
       ].map(toKeyCase)
     },
     preProcess: [{
+      // check if dates are actual dates or something like 08/18/2025 as of 08/15/2025
+    }, {
       // Managing Stock Split
       // I had a total of 30 NVDA shares when the stock split. I was awarded an additional 270 shares. This gives a total of 300 shares against my original 30 shares, so 10:1 split. I need to multiply my old shares by 10 and divide their respective purchase prices by 10. Then I can remove the Stock Split line.
     }, {
@@ -40,10 +42,7 @@ function charlesSchwabTransactionHistoryReaderConfig() {
       SOURCE_SHEET_COL: {
         fn: () => sheetName,
       },
-      DATE_COL: {
-        from: toKeyCase('Date'),
-        fn: (date) => {} // check if actual date or something like 08/18/2025 as of 08/15/2025
-      }, 
+      DATE_COL: toKeyCase('Date'), 
       TAX_YEAR_COL: {
         from: toKeyCase('Date'),
         fn: (date) => {} // calc the tax year
