@@ -237,6 +237,33 @@ const makeHelper = (sheet, labeledColumnMap) => {
         numRows,
         1
       );
+    },
+  
+    rangeIsEmpty: (range) => {
+      fns.assertIsRange(range);
+      
+      const values = range.getValues();
+
+      const result = values.map(inner => inner.join('').trim()).join('').trim();
+
+      return result.length === 0;
+    },
+
+    getRowValues: (range) => {
+      fns.assertIsRange(range);
+
+      const numRows = range.getNumRows();
+
+      const values = [];
+
+      for (var row = 1; row <= numRows; row++) {
+        const rowRange = fns.getRowFromRange(range, row);
+        if (!fns.rangeIsEmpty(rowRange)) {
+          values.push(rowRange.getValues()[0]);
+        }
+      }
+
+      return values;
     }
   };
 
