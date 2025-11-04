@@ -1,22 +1,25 @@
 
-function charlesSchwabTransactionHistoryReaderConfig(sheetName) {
+function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
   
+  const sheetName = 'Charles Schwab Transactions Raw';
+
   const {
-    SOURCE_ID_COL,
-    SOURCE_SHEET_COL,
-    DATE_COL,
-    TAX_YEAR_COL,
-    ACTION_COL,
-    SYMBOL_COL,
-    QUANTITY_COL,
-    SHARE_PRICE_COL,
-    FEES_COL,
-    AMOUNT_COL,
-    CURRENCY_COL,
-  } = getCombinedStockTransactionHistoryColumnKeys();
+    SOURCE_ID,
+    SOURCE_SHEET,
+    DATE,
+    TAX_YEAR,
+    ACTION,
+    SYMBOL,
+    QUANTITY,
+    SHARE_PRICE,
+    FEES,
+    AMOUNT,
+    CURRENCY,
+  } = csthColumns;
   
   // Charles Schwab Transactions Raw
   return {
+    sheetName,
     layout: {
       columns: [
         'EVENT ID',
@@ -56,16 +59,16 @@ function charlesSchwabTransactionHistoryReaderConfig(sheetName) {
       fn: data => data
     }],
     process: {
-      SOURCE_ID_COL: toKeyCase('EVENT ID'),
-      SOURCE_SHEET_COL: {
+      SOURCE_ID: toKeyCase('EVENT ID'),
+      SOURCE_SHEET: {
         fn: () => sheetName,
       },
-      DATE_COL: toKeyCase('Date'), 
-      TAX_YEAR_COL: {
+      DATE: toKeyCase('Date'), 
+      TAX_YEAR: {
         from: toKeyCase('Date'),
         fn: toTaxYear
       },
-      ACTION_COL: {
+      ACTION: {
         from: toKeyCase('Action'),
         fn: (action) => {
           switch (action) {
@@ -94,11 +97,11 @@ function charlesSchwabTransactionHistoryReaderConfig(sheetName) {
           }
         }
       },
-      SYMBOL_COL: toKeyCase('Symbol'),
-      QUANTITY_COL: toKeyCase('Quantity'),
-      SHARE_PRICE_COL: toKeyCase('Price'),
-      FEES_COL: toKeyCase('Fees & Comm'),
-      AMOUNT_COL: {
+      SYMBOL: toKeyCase('Symbol'),
+      QUANTITY: toKeyCase('Quantity'),
+      SHARE_PRICE: toKeyCase('Price'),
+      FEES: toKeyCase('Fees & Comm'),
+      AMOUNT: {
         from: toKeyCase('Amount'),
         fn: (amount) => {
           if (isNaN(amount)) {
@@ -108,7 +111,7 @@ function charlesSchwabTransactionHistoryReaderConfig(sheetName) {
           return Math.abs(amount);
         }
       },
-      CURRENCY_COL: {
+      CURRENCY: {
         from: toKeyCase('Amount'),
         fn: () => 'USD'
       }
