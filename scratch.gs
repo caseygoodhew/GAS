@@ -1,5 +1,5 @@
 
-function charlesSchwabTransactionHistoryReaderConfig() {
+function charlesSchwabTransactionHistoryReaderConfig(sheetName) {
   
   const {
     SOURCE_ID_COL,
@@ -31,11 +31,29 @@ function charlesSchwabTransactionHistoryReaderConfig() {
     },
     preProcess: [{
       // check if dates are actual dates or something like 08/18/2025 as of 08/15/2025
+      fn: data => {
+        return data.map(item => {
+          const key = toKeyCase('Date');
+          
+          if (!isDate(item[key])) {
+            const re = /[0-9]{2,2}\/[0-9]{2,2}\/[0-9]{4,4} as of ([0-9]{2,2})\/([0-9]{2,2})\/([0-9]{4,4})/gm;
+            const matches = re.exec(item[key]);
+            item[key] = new Date(parseInt(matches[3]), parseInt(matches[1]) - 1, parseInt(matches[2]));
+          }
+
+          return item;
+        });
+      }
+    }, {
+      // Update the award price and amount for RSUs  
+      fn: data => data
     }, {
       // Managing Stock Split
       // I had a total of 30 NVDA shares when the stock split. I was awarded an additional 270 shares. This gives a total of 300 shares against my original 30 shares, so 10:1 split. I need to multiply my old shares by 10 and divide their respective purchase prices by 10. Then I can remove the Stock Split line.
+      fn: data => data
     }, {
       // Remove Stock Merger actions
+      fn: data => data
     }],
     process: {
       SOURCE_ID_COL: toKeyCase('EVENT ID'),
@@ -45,7 +63,7 @@ function charlesSchwabTransactionHistoryReaderConfig() {
       DATE_COL: toKeyCase('Date'), 
       TAX_YEAR_COL: {
         from: toKeyCase('Date'),
-        fn: (date) => {} // calc the tax year
+        fn: toTaxYear
       },
       ACTION_COL: {
         from: toKeyCase('Action'),
@@ -96,9 +114,8 @@ function charlesSchwabTransactionHistoryReaderConfig() {
       }
     },
     postProcess: [{
-      // Update the award price and amount for RSUs  
-    }, {
       // Ensure tha there aren't any Actions mapped to 'UNKNOWN'
+      fn: data => data
     }],
   };
 }

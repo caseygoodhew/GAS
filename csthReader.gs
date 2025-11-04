@@ -1,6 +1,6 @@
 function testFunction() {
-  const config = charlesSchwabTransactionHistoryReaderConfig();
   const sheetName = 'Charles Schwab Transactions Raw';
+  const config = charlesSchwabTransactionHistoryReaderConfig(sheetName);
 
   readStockHistory(sheetName, config);
 }
@@ -40,7 +40,7 @@ const readStockHistory = (sheetName, { layout, preProcess, process, postProcess 
     sheet.getLastRow(),
   );
 
-  const data = helper.getRowValues(dataRange).map(row => {
+  let data = helper.getRowValues(dataRange).map(row => {
     return layout.columns.reduce((acc, colLabel) => {
       acc[colLabel] = row[columns.colLabelToNumMap[colLabel] - 1];
       return acc;
@@ -50,14 +50,50 @@ const readStockHistory = (sheetName, { layout, preProcess, process, postProcess 
   /***********************************
    * RUN PRE-PROCESSORS
    **********************************/
+  data = (preProcess || []).reduce((data, {fn}) => fn(data), data);
   
   /***********************************
    * RUN PROCESSORS
    **********************************/
   
+  processKeys = Object.keys(process);
+  data = data.map(item => {
+    return processKeys.reduce((result, key) => {
+      const config = process[key];
+
+      // SOURCE_ID_COL: toKeyCase('EVENT ID'),
+      if (typeof config === 'string') {
+        result[key] = item[config];
+        return result;
+      } 
+
+      if (Object.prototype.toString.call(config) !== '[object Object]') {
+        throw new Error(`Expected value of process.${key} to either be a String (key) or a config object`)
+      }
+
+      // SOURCE_SHEET_COL: {
+      //   fn: () => sheetName,
+      // },
+      if (config.from === undefined) {
+        result[key] = config.fn(item);
+      
+      // TAX_YEAR_COL: {
+      //   from: toKeyCase('Date'),
+      //   fn: (date) => {} // calc the tax year
+      // },
+      } else {
+        result[key] = config.fn(item[config.from], item);
+      }
+
+      return result;
+
+    }, {})
+  })
+
   /***********************************
    * RUN POST-PROCESSORS
    **********************************/
+  data = (postProcess || []).reduce((data, {fn}) => fn(data), data);
   
 }
 

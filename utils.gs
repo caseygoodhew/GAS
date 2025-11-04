@@ -88,4 +88,23 @@ const makeEventId = () => {
   return result;
 }
 
+const toTaxYear = (valueOrCell) => {
+  const value = asValue(valueOrCell);
+  if (!isDate(value)) {
+    throw new Error(`Cannot calculate tax year of value as value (${value}) is not a date.`)
+  } 
+
+  year = value.getFullYear() - 2000;
+  month = value.getMonth() + 1;
+  day = value.getDate();
+
+  if (month < 4) {
+    year--;
+  } else if (month === 4 && day < 6) {
+    year--;
+  }
+
+  return `${year}/${year+1}`;
+}
+
 
