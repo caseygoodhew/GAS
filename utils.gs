@@ -107,4 +107,37 @@ const toTaxYear = (valueOrCell) => {
   return `${year}/${year+1}`;
 }
 
+// Must be a symbol that is tracked in its own sheet
+// -- assumes dates are in col A, values in col B
+// -- assumes that dates are oldest-first-newest-last
+// -- assumes data is fully loaded
+const readRate = (symbol, date) => {
+  
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(symbol);
+  if (sheet == null) {
+    throw new Error(`Cannot find rate sheet for symbol ${symbol}`)
+  }
+
+  const helper = makeHelper(sheet);
+  const values = helper.getRange(1, 1, 2, sheet.getLastRow()).getValues();
+
+  let index = -1;
+  date = date.setHours(0, 0, 0, 0);
+  
+  for (let r = 0; r < values.length; r++) {
+    let d = values[r][0];
+    if (isDate(d)) {
+      d = d.setHours(0, 0, 0, 0);
+      if (d <= date) {
+        index = r;
+      }
+    }
+  }
+
+  if (index === -1) {
+    return;
+  }
+
+  return values[index][1];
+}
 
