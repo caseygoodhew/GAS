@@ -2,18 +2,18 @@ const updateCombinedStockTransactionHistorySources = () => {
 
   const csthSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Combined Stock Transaction History');
   const csthColumns = initLabelledColumns(csthSheet, [
-      'SOURCE_ID',
-      'SOURCE_SHEET',
-      'DATE',
-      'TAX_YEAR',
-      'ACTION',
-      'SYMBOL',
-      'QUANTITY',
-      'SHARE_PRICE',
-      'FEES',
-      'AMOUNT',
-      'CURRENCY'
-    ]);
+    'SOURCE_ID',
+    'SOURCE_SHEET',
+    'DATE',
+    'TAX_YEAR',
+    'ACTION',
+    'SYMBOL',
+    'QUANTITY',
+    'SHARE_PRICE',
+    'FEES',
+    'AMOUNT',
+    'CURRENCY'
+  ]);
 
   const actions = {
     BUY: 'BUY',
@@ -36,9 +36,13 @@ const updateCombinedStockTransactionHistorySources = () => {
     }, [])
   })
 
-  if (csthSheet.getLastRow() > 2) {
-    helper.getRange(csthColumns.first, 3, csthColumns.last, csthSheet.getLastRow()).clearContent();
+  const firstDataRow = 3;
+
+  // clear existing data (if any exists)
+  if (csthSheet.getLastRow() >= firstDataRow) {
+    helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, csthSheet.getLastRow()).clearContent();
   }
-  helper.getRange(csthColumns.first, 3, csthColumns.last, 2 + values.length).setValues(values)
+
+  helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, firstDataRow + values.length - 1).setValues(values)
 
 }
