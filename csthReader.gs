@@ -185,8 +185,6 @@ const readCombinedStockTransactionHistorySources = () => {
       });
     })
 
-    
-    
     return data;
   }
 
