@@ -5,6 +5,7 @@ const testFunction = () => {
 function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
   
   const sheetName = 'Charles Schwab Transactions Raw';
+  const toKeyCase = value => String(value).replace(/ /g, '_').toUpperCase();
 
   const {
     SOURCE_ID,
@@ -85,10 +86,6 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
         })
       }
     }, {
-      // Managing Stock Split
-      // I had a total of 30 NVDA shares when the stock split. I was awarded an additional 270 shares. This gives a total of 300 shares against my original 30 shares, so 10:1 split. I need to multiply my old shares by 10 and divide their respective purchase prices by 10. Then I can remove the Stock Split line.
-      fn: data => data
-    }, {
       // Remove Stock Merger actions
       fn: data => data
     }],
@@ -115,6 +112,9 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
 
             case 'Stock Plan Activity':
               return 'AWARD';
+
+            case 'Stock Split':
+              return 'SPLIT';
 
             case 'NRA Tax Adj':
             case 'Qualified Dividend':
@@ -151,10 +151,14 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
       }
     },
     postProcess: [{
+      // Managing Stock Split
+      // I had a total of 30 NVDA shares when the stock split. I was awarded an additional 270 shares. This gives a total of 300 shares against my original 30 shares, so 10:1 split. I need to multiply my old shares by 10 and divide their respective purchase prices by 10. Then I can remove the Stock Split line.
+      fn: data => {}
+    }, {
       // Ensure tha there aren't any Actions mapped to 'UNKNOWN'
       fn: data => data
     }],
   };
 }
 
-const toKeyCase = value => String(value).replace(/ /g, '_').toUpperCase();
+
