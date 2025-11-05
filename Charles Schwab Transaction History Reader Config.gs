@@ -2,7 +2,7 @@ const testFunction = () => {
   readCombinedStockTransactionHistorySources();
 }
 
-function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
+function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
   
   const sheetName = 'Charles Schwab Transactions Raw';
   const toKeyCase = value => String(value).replace(/ /g, '_').toUpperCase();
@@ -20,6 +20,15 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
     AMOUNT,
     CURRENCY,
   } = csthColumns;
+
+  const {
+    BUY,
+    SELL,
+    AWARD,
+    SPLIT,
+    NONE,
+    UNKNOWN
+  } = constants.actions;
   
   // Charles Schwab Transactions Raw
   return {
@@ -87,34 +96,37 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
       }
     }, {
       // Remove Stock Merger actions
-      fn: data => data
+      fn: data => {
+        const actionsToDrop = ['Stock Merger'];
+        return data.filter(item => !actionsToDrop.includes(item[toKeyCase('Action')]));
+      }
     }],
     process: {
-      SOURCE_ID: toKeyCase('EVENT ID'),
-      SOURCE_SHEET: {
+      [SOURCE_ID]: toKeyCase('EVENT ID'),
+      [SOURCE_SHEET]: {
         fn: () => sheetName,
       },
-      DATE: toKeyCase('Date'), 
-      TAX_YEAR: {
+      [DATE]: toKeyCase('Date'), 
+      [TAX_YEAR]: {
         from: toKeyCase('Date'),
         fn: toTaxYear
       },
-      ACTION: {
+      [ACTION]: {
         from: toKeyCase('Action'),
         fn: (action) => {
           switch (action) {
             case 'Buy':
             case 'Reinvest Shares':
-              return 'BUY';
+              return BUY;
 
             case 'Sell':
-              return 'SELL';
+              return SELL;
 
             case 'Stock Plan Activity':
-              return 'AWARD';
+              return AWARD;
 
             case 'Stock Split':
-              return 'SPLIT';
+              return SPLIT;
 
             case 'NRA Tax Adj':
             case 'Qualified Dividend':
@@ -124,18 +136,18 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
             case 'Credit Interest':
             case 'Special Qual Div':
             case 'Adjustment':
-              return 'NONE';
+              return NONE;
 
             default:
-              return 'UNKNOWN';
+              return UNKNOWN;
           }
         }
       },
-      SYMBOL: toKeyCase('Symbol'),
-      QUANTITY: toKeyCase('Quantity'),
-      SHARE_PRICE: toKeyCase('Price'),
-      FEES: toKeyCase('Fees & Comm'),
-      AMOUNT: {
+      [SYMBOL]: toKeyCase('Symbol'),
+      [QUANTITY]: toKeyCase('Quantity'),
+      [SHARE_PRICE]: toKeyCase('Price'),
+      [FEES]: toKeyCase('Fees & Comm'),
+      [AMOUNT]: {
         from: toKeyCase('Amount'),
         fn: (amount) => {
           if (isNaN(amount)) {
@@ -145,15 +157,14 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
           return Math.abs(amount);
         }
       },
-      CURRENCY: {
+      [CURRENCY]: {
         from: toKeyCase('Amount'),
         fn: () => 'USD'
       }
     },
     postProcess: [{
       // Managing Stock Split
-      // I had a total of 30 NVDA shares when the stock split. I was awarded an additional 270 shares. This gives a total of 300 shares against my original 30 shares, so 10:1 split. I need to multiply my old shares by 10 and divide their respective purchase prices by 10. Then I can remove the Stock Split line.
-      fn: data => {}
+      fn: csthConsolidateStockSplits(csthColumns, constants)
     }, {
       // Ensure tha there aren't any Actions mapped to 'UNKNOWN'
       fn: data => data

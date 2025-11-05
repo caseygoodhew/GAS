@@ -17,9 +17,18 @@ const readCombinedStockTransactionHistorySources = () => {
       'AMOUNT',
       'CURRENCY'
     ]);
+
+    const actions = {
+      BUY: 'BUY',
+      SELL: 'SELL',
+      AWARD: 'AWARD',
+      SPLIT: 'SPLIT',
+      NONE: 'NONE',
+      UNKNOWN: 'UNKNOWN'
+    }
     
     const csData = readStockHistory(
-      charlesSchwabTransactionHistoryReaderConfig(csthColumns)
+      charlesSchwabTransactionHistoryReaderConfig(csthColumns, { actions })
     );
 
     const t212Data = [];
