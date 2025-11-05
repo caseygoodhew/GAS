@@ -25,6 +25,8 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     BUY,
     SELL,
     AWARD,
+    DIVIDEND,
+    TAX,
     SPLIT,
     NONE,
   } = constants.actions;
@@ -130,8 +132,12 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
               return SPLIT;
 
             case 'NRA Tax Adj':
+              return TAX;
+
             case 'Qualified Dividend':
             case 'Qual Div Reinvest':
+              return DIVIDEND;
+            
             case 'Stock Plan Activity':
             case 'MoneyLink Transfer':
             case 'Credit Interest':

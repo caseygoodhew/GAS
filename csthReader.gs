@@ -1,33 +1,9 @@
-const readCombinedStockTransactionHistorySources = () => {
+const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
   
-  const csthSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Combined Stock Transaction History');
-  const csthColumns = initLabelledColumns(csthSheet, [
-      'SOURCE_ID',
-      'SOURCE_SHEET',
-      'DATE',
-      'TAX_YEAR',
-      'ACTION',
-      'SYMBOL',
-      'QUANTITY',
-      'SHARE_PRICE',
-      'FEES',
-      'AMOUNT',
-      'CURRENCY'
-    ]);
-
-  const actions = {
-    BUY: 'BUY',
-    SELL: 'SELL',
-    AWARD: 'AWARD',
-    SPLIT: 'SPLIT',
-    NONE: 'NONE'
-  };
-
   const exec = () => {
   
-    
     const csData = readStockHistory(
-      charlesSchwabTransactionHistoryReaderConfig(csthColumns, { actions })
+      charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants)
     );
 
     const t212Data = [];
@@ -161,7 +137,7 @@ const readCombinedStockTransactionHistorySources = () => {
       'SOURCE_SHEET': validators.isString,
       'DATE': validators.isDate,
       'TAX_YEAR': validators.isRegex(/^[0-9][0-9]\/[0-9][0-9]$/),
-      'ACTION': validators.isOneOf(Object.values(actions)),
+      'ACTION': validators.isOneOf(Object.values(constants.actions)),
       'SYMBOL': validators.isString,
       'QUANTITY': validators.isPositiveNumberOrEmpty,
       'SHARE_PRICE': validators.isPositiveNumberOrEmpty,
