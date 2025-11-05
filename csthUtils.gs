@@ -18,8 +18,6 @@ const csthConsolidateStockSplits = (csthColumns, constants) => {
     SELL,
     AWARD,
     SPLIT,
-    NONE,
-    UNKNOWN
   } = constants.actions;
 
   const splitableActions = [BUY, SELL, AWARD];

@@ -27,8 +27,9 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     AWARD,
     SPLIT,
     NONE,
-    UNKNOWN
   } = constants.actions;
+
+  const UNKNOWN = 'UNKNOWN';
   
   // Charles Schwab Transactions Raw
   return {
@@ -165,9 +166,6 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     postProcess: [{
       // Managing Stock Split
       fn: csthConsolidateStockSplits(csthColumns, constants)
-    }, {
-      // Ensure tha there aren't any Actions mapped to 'UNKNOWN'
-      fn: data => data
     }],
   };
 }

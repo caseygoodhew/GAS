@@ -1,10 +1,7 @@
 const readCombinedStockTransactionHistorySources = () => {
-
-  const exec = () => {
-    
-    const csthSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Combined Stock Transaction History');
-    const csthColKeys = getCombinedStockTransactionHistoryColumnKeys()
-    const csthColumns = initLabelledColumns(csthSheet, [
+  
+  const csthSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Combined Stock Transaction History');
+  const csthColumns = initLabelledColumns(csthSheet, [
       'SOURCE_ID',
       'SOURCE_SHEET',
       'DATE',
@@ -18,14 +15,16 @@ const readCombinedStockTransactionHistorySources = () => {
       'CURRENCY'
     ]);
 
-    const actions = {
-      BUY: 'BUY',
-      SELL: 'SELL',
-      AWARD: 'AWARD',
-      SPLIT: 'SPLIT',
-      NONE: 'NONE',
-      UNKNOWN: 'UNKNOWN'
-    }
+  const actions = {
+    BUY: 'BUY',
+    SELL: 'SELL',
+    AWARD: 'AWARD',
+    SPLIT: 'SPLIT',
+    NONE: 'NONE'
+  };
+
+  const exec = () => {
+  
     
     const csData = readStockHistory(
       charlesSchwabTransactionHistoryReaderConfig(csthColumns, { actions })
@@ -35,20 +34,6 @@ const readCombinedStockTransactionHistorySources = () => {
     
     return [].concat(csData, t212Data);
   }
-
-  const getCombinedStockTransactionHistoryColumnKeys = () => ({
-    SOURCE_ID_COL: 'SOURCE_ID',
-    SOURCE_SHEET_COL: 'SOURCE_SHEET',
-    DATE_COL: 'DATE',
-    TAX_YEAR_COL: 'TAX_YEAR',
-    ACTION_COL: 'ACTION',
-    SYMBOL_COL: 'SYMBOL',
-    QUANTITY_COL: 'QUANTITY',
-    SHARE_PRICE_COL: 'SHARE_PRICE',
-    FEES_COL: 'FEES',
-    AMOUNT_COL: 'AMOUNT',
-    CURRENCY_COL: 'CURRENCY'
-  })
 
   const readStockHistory = ({ sheetName, layout, preProcess, process, postProcess }) => {
     
@@ -125,6 +110,82 @@ const readCombinedStockTransactionHistorySources = () => {
      * RUN POST-PROCESSORS
      **********************************/
     data = (postProcess || []).reduce((data, {fn}) => fn(data), data);
+
+    /***********************************
+     * VALIDATE DATA QUALiTY
+     **********************************/
+    // Validate that only known columns have been created
+    const expectedKeys = [].concat(csthColumns.keys).sort().join(', ');
+    data.forEach(item => {
+      const actualKeys =  Object.keys(item).sort().join(', ');
+      if (actualKeys !== expectedKeys) {
+        throw new Error(`Error porcessing ${sheetName}: Expected object to contain keys (${expectedKeys}), actually contains ${actualKeys}`);
+      }
+    })
+
+    const validators = {
+      isString: (value) => {
+        if (typeof value !== 'string') {
+          return 'is not a string';
+        }
+      },
+      isDate: (value) => {
+        if (!(value instanceof Date && !isNaN(value.valueOf()))) {
+          return 'is not a Date object';
+        }
+      },
+      isRegex: (re) => (value) => {
+        if (!re.test(value)) {
+          return `does not match RegEx (${re})`;
+        }
+      },
+      isOneOf: (valids) => (value) => {
+        if (!valids.includes(value)) {
+          return `expected one of ${valids.join(', ')}`;
+        }
+      },
+      isPositiveNumberOrEmpty: (value) => {
+        // is empty check
+        if (typeof value === 'string' && value.length === 0) {
+          return;
+        }
+        
+        if (!(typeof value === "number" && value >= 0)) {
+          return `expected a positive number`;
+        }
+      },
+    }
+
+    const dataTypeValidation = {
+      'SOURCE_ID': validators.isString,
+      'SOURCE_SHEET': validators.isString,
+      'DATE': validators.isDate,
+      'TAX_YEAR': validators.isRegex(/^[0-9][0-9]\/[0-9][0-9]$/),
+      'ACTION': validators.isOneOf(Object.values(actions)),
+      'SYMBOL': validators.isString,
+      'QUANTITY': validators.isPositiveNumberOrEmpty,
+      'SHARE_PRICE': validators.isPositiveNumberOrEmpty,
+      'FEES': validators.isPositiveNumberOrEmpty,
+      'AMOUNT': validators.isPositiveNumberOrEmpty,
+      'CURRENCY': validators.isRegex(/^[A-Z][A-Z][A-Z]$/)
+    };
+
+    const devValidationHasAllKeys = Object.keys(dataTypeValidation).sort().join(', ');
+    if (devValidationHasAllKeys !== expectedKeys) {
+      throw new Error(`Dev Error: dataTypeValidation does not match column names`);
+    }
+    
+    // Validate that each column only contains expected data types
+    data.forEach(item => {
+      csthColumns.keys.forEach(key => {
+        const result = dataTypeValidation[key](item[key]);
+        if (result) {
+          throw new Error(`Error porcessing ${sheetName}: Data validation failed for ${key} (${item[key]}) with message "${result}"`);
+        }
+      });
+    })
+
+    
     
     return data;
   }
