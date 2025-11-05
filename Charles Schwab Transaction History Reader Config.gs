@@ -1,3 +1,6 @@
+const testFunction = () => {
+  readCombinedStockTransactionHistorySources();
+}
 
 function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
   
@@ -48,8 +51,39 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns) {
         });
       }
     }, {
+      // Update symbols that have changed over time
+      fn: data => {
+        const changes = {
+          'FB': 'META'
+        };
+        
+        return data.map(item => {
+          const symbol = item[toKeyCase('Symbol')];
+          if (changes[symbol]) {
+            item[toKeyCase('Symbol')] = changes[symbol];
+          }
+          return item;
+        });
+      }
+    }, {
       // Update the award price and amount for RSUs  
-      fn: data => data
+      fn: data => {
+        return data.map(item => {
+          if (item[toKeyCase('Action')] == 'Stock Plan Activity') {
+            const date = item[toKeyCase('Date')];
+            const symbol = item[toKeyCase('Symbol')];
+            const quantity = item[toKeyCase('Quantity')];
+            
+            date.setDate(date.getDate() - 1);
+            const price = readRate(symbol, date);
+
+            item[toKeyCase('Price')] = price;
+            item[toKeyCase('Amount')] = price * quantity;
+          }
+
+          return item;
+        })
+      }
     }, {
       // Managing Stock Split
       // I had a total of 30 NVDA shares when the stock split. I was awarded an additional 270 shares. This gives a total of 300 shares against my original 30 shares, so 10:1 split. I need to multiply my old shares by 10 and divide their respective purchase prices by 10. Then I can remove the Stock Split line.

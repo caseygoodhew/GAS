@@ -107,11 +107,13 @@ const toTaxYear = (valueOrCell) => {
   return `${year}/${year+1}`;
 }
 
-// Must be a symbol that is tracked in its own sheet
-// -- assumes dates are in col A, values in col B
-// -- assumes that dates are oldest-first-newest-last
-// -- assumes data is fully loaded
-const readRate = (symbol, date) => {
+const symbolRatesMap = {};
+// provides memoization
+const readAllRatesForSymbol = (symbol) => {
+  
+  if (symbolRatesMap[symbol]) {
+    return symbolRatesMap[symbol];
+  }
   
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(symbol);
   if (sheet == null) {
@@ -121,16 +123,32 @@ const readRate = (symbol, date) => {
   const helper = makeHelper(sheet);
   const values = helper.getRange(1, 1, 2, sheet.getLastRow()).getValues();
 
+  values.filter(row => isDate(row[0])).map(row => {
+    const date = row[0];
+    return [
+      date.setHours(0, 0, 0, 0),
+      row[1]
+    ]
+  })
+  
+  symbolRatesMap[symbol] = values;
+  return values;
+}
+
+// Must be a symbol that is tracked in its own sheet
+// -- assumes dates are in col A, values in col B
+// -- assumes that dates are oldest-first-newest-last
+// -- assumes data is fully loaded
+const readRate = (symbol, date) => {
+  
+  const values = readAllRatesForSymbol(symbol);
+
   let index = -1;
   date = date.setHours(0, 0, 0, 0);
   
   for (let r = 0; r < values.length; r++) {
-    let d = values[r][0];
-    if (isDate(d)) {
-      d = d.setHours(0, 0, 0, 0);
-      if (d <= date) {
-        index = r;
-      }
+    if (values[r][0] <= date) {
+      index = r;
     }
   }
 

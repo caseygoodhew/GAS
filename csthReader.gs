@@ -1,6 +1,6 @@
-function testFunction() {
+const readCombinedStockTransactionHistorySources = () => {
 
-  const readAll = () => {
+  const exec = () => {
     
     const csthSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Combined Stock Transaction History');
     const csthColKeys = getCombinedStockTransactionHistoryColumnKeys()
@@ -120,5 +120,5 @@ function testFunction() {
     return data;
   }
 
-  return readAll();
+  return exec();
 }
