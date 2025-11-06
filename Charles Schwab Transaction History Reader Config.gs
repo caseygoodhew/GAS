@@ -1,7 +1,3 @@
-const testFunction = () => {
-  readCombinedStockTransactionHistorySources();
-}
-
 function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
   
   const sheetName = 'Charles Schwab Transactions Raw';
@@ -28,6 +24,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     DIVIDEND,
     TAX,
     SPLIT,
+    WITHDRAW,
     NONE,
   } = constants.actions;
 
@@ -138,8 +135,10 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
             case 'Qual Div Reinvest':
               return DIVIDEND;
             
-            case 'Stock Plan Activity':
             case 'MoneyLink Transfer':
+              return WITHDRAW;
+
+            case 'Stock Plan Activity':
             case 'Credit Interest':
             case 'Special Qual Div':
             case 'Adjustment':

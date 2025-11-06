@@ -2,11 +2,13 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
   
   const exec = () => {
   
-    const csData = readStockHistory(
+    /*const csData = readStockHistory(
       charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants)
     );
-
-    const t212Data = [];
+*/
+    const t212Data = readStockHistory(
+      trading212TransactionHistoryReaderConfig(csthColumns, constants)
+    );
     
     return [].concat(csData, t212Data);
   }
@@ -68,7 +70,19 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
         // },
         if (config.from === undefined) {
           result[key] = config.fn(item);
+
         
+
+        // [FEES]: {
+        //   from: [
+        //    toKeyCase('Stamp duty'),
+        //    toKeyCase('Stamp duty reserve tax'),
+        //    toKeyCase('Ptm levy'),
+        //   ]
+        } else if (Array.isArray(config.from)) {
+          const args = config.from.map(key => item[key]);
+          result[key] = config.fn(...args, item);
+
         // TAX_YEAR_COL: {
         //   from: toKeyCase('Date'),
         //   fn: (date) => {} // calc the tax year

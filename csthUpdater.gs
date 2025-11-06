@@ -22,6 +22,8 @@ const updateCombinedStockTransactionHistorySources = () => {
     DIVIDEND: 'DIVIDEND',
     TAX: 'TAX',
     SPLIT: 'SPLIT',
+    WITHDRAW: 'WITHDRAW',
+    DEPOSIT: 'DEPOSIT',
     NONE: 'NONE'
   };
 

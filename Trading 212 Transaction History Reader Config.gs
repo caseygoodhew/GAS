@@ -1,0 +1,173 @@
+function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
+  
+  const sheetName = 'Trading 212 Transactions Raw';
+  const toKeyCase = value => String(value).replace(/ /g, '_').toUpperCase();
+
+  const {
+    SOURCE_ID,
+    SOURCE_SHEET,
+    DATE,
+    TAX_YEAR,
+    ACTION,
+    SYMBOL,
+    QUANTITY,
+    SHARE_PRICE,
+    FEES,
+    AMOUNT,
+    CURRENCY,
+  } = csthColumns;
+
+  const {
+    BUY,
+    SELL,
+    DIVIDEND,
+    DEPOSIT,
+    WITHDRAW,
+    TAX,
+  } = constants.actions;
+
+  const UNKNOWN = 'UNKNOWN';
+  const EMPTY = '';
+
+  const assertIsNumberOrEmpty = (value, label) => {
+    if (value === EMPTY) {
+      return;
+    }
+
+    if (typeof value === 'number') {
+      return;
+    }
+
+    throw new Error(`Expected "${label}" to be a number or empty, got (${value}) with type ${typeof value}`);
+  }
+  
+  // Charles Schwab Transactions Raw
+  return {
+    sheetName,
+    layout: {
+      columns: [
+        'EVENT ID',
+        'Time',
+        'Action',
+        'Ticker',
+        'No. of shares',
+        'Price / share',
+        'Currency (Price / share)',
+        'Exchange rate',
+        // 'Result' <- this column contains the capital gains on the SELL (and can be ignored)
+        'Total',
+        'Currency (Total)',
+        'Stamp duty',
+        'Currency (Stamp duty)', 
+        'Stamp duty reserve tax',
+        'Currency (Stamp duty reserve tax)', 
+        'Ptm levy',
+        'Currency (Ptm levy)',
+      ].map(toKeyCase)
+    },
+    preProcess: [{
+      // 1. If a witholding tax is ever non-zero, create a new line item for it with the action "Withholding tax"
+      fn: data => data
+    }, {
+      // 2. Expect that ['Currency (Stamp duty)', 'Currency (Stamp duty reserve tax)', 'Currency (Ptm levy)'] are always the same as 'Currency (Total)'
+      fn: data => data
+    }],
+    process: {
+      [SOURCE_ID]: toKeyCase('EVENT ID'),
+      [SOURCE_SHEET]: {
+        fn: () => sheetName,
+      },
+      [DATE]: toKeyCase('Time'), 
+      [TAX_YEAR]: {
+        from: toKeyCase('Time'),
+        fn: toTaxYear
+      },
+      [ACTION]: {
+        from: toKeyCase('Action'),
+        fn: (action) => {
+          switch (action) {
+            case 'Deposit':
+              return DEPOSIT;
+            
+            case 'Market buy':
+              return BUY;
+
+            case 'Dividend (Dividend)':
+              return DIVIDEND;
+
+            case 'Market sell':
+              return SELL;
+
+            case 'Withdrawal':
+              return WITHDRAW;
+
+            case 'Withholding tax':
+              return TAX;
+
+            default:
+              return UNKNOWN;
+          }
+        }
+      },
+      [SYMBOL]: toKeyCase('Ticker'),
+      [QUANTITY]: toKeyCase('No. of shares'),
+      [SHARE_PRICE]: {
+        from: [
+          toKeyCase('Price / share'), 
+          toKeyCase('Exchange rate'), 
+        ],
+        fn: (price, exRate) => {
+          
+          assertIsNumberOrEmpty(price, "Price / Share");
+          assertIsNumberOrEmpty(exRate, "Exchange Rate");
+          
+          if (price === EMPTY && exRate === EMPTY) {
+            return EMPTY;
+          }
+
+          if (price === EMPTY || exRate === EMPTY) {
+            throw new Error('Expected both "Price / Share" and "Exchange Rate" to be set, or not set. Encountered a mixed scenario')
+          }
+          
+          return price / exRate
+        }
+      },
+      [FEES]: {
+        from: [
+          toKeyCase('Stamp duty'),
+          toKeyCase('Stamp duty reserve tax'),
+          toKeyCase('Ptm levy'),
+        ],
+        fn: (stampDuty, stampDutyReserve, pmtLevy) => {
+          assertIsNumberOrEmpty(stampDuty, "Stamp duty");
+          assertIsNumberOrEmpty(stampDutyReserve, "Stamp duty reserve tax");
+          assertIsNumberOrEmpty(pmtLevy, "Ptm levy");
+          
+          if (stampDuty === EMPTY && stampDutyReserve === EMPTY && pmtLevy === EMPTY) {
+            return EMPTY;
+          }
+
+          return (stampDuty || 0) + (stampDutyReserve || 0) + (pmtLevy || 0);
+        }
+      },
+      [AMOUNT]: {
+        from: toKeyCase('Total'),
+        fn: (amount) => {
+          if (isNaN(amount)) {
+            return amount;
+          }
+
+          return Math.abs(amount);
+        }
+      },
+      [CURRENCY]: toKeyCase('Currency (Total)')
+    },
+    postProcess: [{
+      // Managing Transactions that have been broken apart into small pieces (e.g. buy 1000 shares, but there are 10x 100 share transactions)
+      //fn: csthConsolidateDistributedActions(csthColumns, constants)
+      fn: data => data
+    }],
+  };
+}
+
+
