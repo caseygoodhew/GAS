@@ -75,18 +75,32 @@ const isDate = (valueOrCell) => {
   return value instanceof Date && !isNaN(value.valueOf())
 }
 
-const makeEventId = () => {
-  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const length = 6;
-  let result = "";
+const makeEventId = (() => { 
+  
+  let memoizedEventIds = [];
+  let lastRowChecked = 1;
+  
+  return () => {
+  
+    if (memoizedEventIds.length === 0) {
+      const rowCount = 100;
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EVENT IDS');
+      const range = sheet.getRange(lastRowChecked + 1, 1, rowCount, 3);
+      const available = range.getValues().filter(row => {
+        if (row[2] === '') {
+          throw new Error(`EVENT IDS sheet needs more values added`)
+        }
 
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    result += charset[randomIndex];
+        return row[2] === 0;
+      }).map(row => row[0])
+
+      lastRowChecked += rowCount;
+      memoizedEventIds.push(...available);
+    }
+    
+    return memoizedEventIds.shift();
   }
-
-  return result;
-}
+})();
 
 const toTaxYear = (valueOrCell) => {
   const value = asValue(valueOrCell);
