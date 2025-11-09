@@ -85,8 +85,15 @@ const makeEventId = (() => {
     if (memoizedEventIds.length === 0) {
       const rowCount = 100;
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EVENT IDS');
+      
+      const errorCheckRange = sheet.getRange(1, 5);
+      if (errorCheckRange.getValue() !== 'A-OK!') {
+        throw new Error('There is an error on the EVENT IDS sheet that must be corrected before generating Event Ids');
+      }
+      
       const range = sheet.getRange(lastRowChecked + 1, 1, rowCount, 3);
       const available = range.getValues().filter(row => {
+        
         if (row[2] === '') {
           throw new Error(`EVENT IDS sheet needs more values added`)
         }
