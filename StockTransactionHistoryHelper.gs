@@ -1,7 +1,7 @@
 function fillEventIdsForTrading212TransactionsRaw() {
   fillEventIds({
     sheetName: 'Trading 212 Transactions Raw',
-    firstRow: 2,
+    firstRow: 3,
     eventIdCol: "A",
     contentsCol: "B"
   });
@@ -10,7 +10,7 @@ function fillEventIdsForTrading212TransactionsRaw() {
 function fillEventIdsForCharlesSchwabTransactionsRaw() {
   fillEventIds({
     sheetName: 'Charles Schwab Transactions Raw',
-    firstRow: 2,
+    firstRow: 3,
     eventIdCol: "A",
     contentsCol: "C"
   });
@@ -41,7 +41,8 @@ function fillEventIds({ sheetName, firstRow, eventIdCol, contentsCol }) {
   for (let i = 0; i < contents.length; i++) {
     if (contents[i][0].trim().length > 0 && eventIds[i][0].trim().length === 0) {
       const cell = eventIdRange.getCell(i+1, 1);
-      cell.setValue(makeEventId());
+      const eventId = makeEventId();
+      cell.setValue(eventId);
     }
   }
 }

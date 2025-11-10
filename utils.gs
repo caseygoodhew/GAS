@@ -82,11 +82,11 @@ const makeEventId = (() => {
   
   return () => {
   
-    if (memoizedEventIds.length === 0) {
+    while (memoizedEventIds.length === 0) {
       const rowCount = 100;
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EVENT IDS');
       
-      const errorCheckRange = sheet.getRange(1, 5);
+      const errorCheckRange = sheet.getRange(1, 8);
       if (errorCheckRange.getValue() !== 'A-OK!') {
         throw new Error('There is an error on the EVENT IDS sheet that must be corrected before generating Event Ids');
       }
@@ -179,4 +179,6 @@ const readRate = (symbol, date) => {
 
   return values[index][1];
 }
+
+
 
