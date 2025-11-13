@@ -40,6 +40,11 @@ const asValue = (valueOrCell) => {
   return isCell ? valueOrCell.getValue() : valueOrCell;
 }
 
+const isNumber = (valueOrCell) => {
+  const value = asValue(valueOrCell);
+  return typeof value === 'number';
+}
+
 const isEmpty = (valueOrCell) => {
   const value = asValue(valueOrCell);
 

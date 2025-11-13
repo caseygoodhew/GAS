@@ -4,6 +4,7 @@ const updateCombinedStockTransactionHistorySources = () => {
   const csthColumns = initLabelledColumns(csthSheet, [
     'SOURCE_ID',
     'SOURCE_SHEET',
+    'EVENT_ID',
     'DATE',
     'TAX_YEAR',
     'ACTION',
@@ -30,6 +31,7 @@ const updateCombinedStockTransactionHistorySources = () => {
   const helper = makeHelper(csthSheet, csthColumns);
 
   const data = readCombinedStockTransactionHistorySources(csthColumns, {actions});
+  data.forEach(item => item['EVENT_ID'] = makeEventId())
 
   const values = data.map(item => {
     return csthColumns.keys.reduce((array, key) => {

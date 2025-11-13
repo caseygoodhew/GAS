@@ -170,7 +170,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     },
     postProcess: [{
       // Managing Stock Split
-      fn: csthConsolidateStockSplits(csthColumns, constants)
+      fn: csthConsolidateMarketSplits(csthColumns, constants)
     }],
   };
 }

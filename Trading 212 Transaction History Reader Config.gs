@@ -53,6 +53,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
         'No. of shares',
         'Price / share',
         'Currency (Price / share)',
+        'Withholding tax',
         'Exchange rate',
         // 'Result' <- this column contains the capital gains on the SELL (and can be ignored)
         'Total',
@@ -67,10 +68,43 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     },
     preProcess: [{
       // 1. If a witholding tax is ever non-zero, create a new line item for it with the action "Withholding tax"
-      fn: data => data
+      fn: data => {
+        const withholdingTaxLines = data.filter(item => {
+          const value = item[toKeyCase('Withholding Tax')];
+          return typeof value === 'number' && value !== 0;
+        })
+
+        if (withholdingTaxLines.length > 0) {
+          // This should probably create the line using a split function, but at the
+          // time of implementation, there wasn't a use case for it
+          throw new Error('Trading212: Withholdng Tax split not implemented');
+        }
+
+        return data;
+      }
     }, {
       // 2. Expect that ['Currency (Stamp duty)', 'Currency (Stamp duty reserve tax)', 'Currency (Ptm levy)'] are always the same as 'Currency (Total)'
-      fn: data => data
+      fn: data => {
+        const baseLabel = 'Currency (Total)';
+        const expectSameLabels = ['Currency (Stamp duty)', 'Currency (Stamp duty reserve tax)', 'Currency (Ptm levy)']
+        
+        data.forEach(item => {
+          const key = item[toKeyCase('EVENT ID')];
+          const base = item[toKeyCase(baseLabel)];
+          
+          const expectSame = expectSameLabels.map(label => item[toKeyCase(label)]);
+          
+          expectSame.forEach((value, index) => {
+            if (isEmpty(value)) { return; }
+
+            if (base !== value) {
+              throw new Error(`Trading212: Found unexpected currenty discrepency for ${key} between "${baseLabel}" (${base}) and "${expectSameLabels[index]}" (${value})`);
+            }
+          })
+        });
+        
+        return data;
+      }
     }],
     process: {
       [SOURCE_ID]: toKeyCase('EVENT ID'),
@@ -164,8 +198,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     },
     postProcess: [{
       // Managing Transactions that have been broken apart into small pieces (e.g. buy 1000 shares, but there are 10x 100 share transactions)
-      //fn: csthConsolidateDistributedActions(csthColumns, constants)
-      fn: data => data
+      fn: csthConsolidateDistributedActions(csthColumns, constants)
     }],
   };
 }

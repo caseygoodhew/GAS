@@ -14,7 +14,6 @@ const initLabelledColumns = (sheet, expectedLabels) => {
   // internal
   const labelRowValues = rowValues[0];
   const headingRowValues = rowValues[1];
-  
 
   // returned
   const colLabelToNumMap = {};

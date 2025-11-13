@@ -2,6 +2,7 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
   
   const exec = () => {
   
+    const csData = [];
     /*const csData = readStockHistory(
       charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants)
     );
@@ -105,11 +106,12 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
      * VALIDATE DATA QUALiTY
      **********************************/
     // Validate that only known columns have been created
-    const expectedKeys = [].concat(csthColumns.keys).sort().join(', ');
+    const excludeKeys = ['EVENT_ID'];
+    const expectedKeys = [].concat(csthColumns.keys).filter(key => !excludeKeys.includes(key)).sort().join(', ');
     data.forEach(item => {
       const actualKeys =  Object.keys(item).sort().join(', ');
       if (actualKeys !== expectedKeys) {
-        throw new Error(`Error porcessing ${sheetName}: Expected object to contain keys (${expectedKeys}), actually contains ${actualKeys}`);
+        throw new Error(`Error processing ${sheetName}: Expected object to contain keys (${expectedKeys}), actually contains ${actualKeys}`);
       }
     })
 
@@ -168,9 +170,13 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
     // Validate that each column only contains expected data types
     data.forEach(item => {
       csthColumns.keys.forEach(key => {
+        if (excludeKeys.includes(key)) {
+          return;
+        }
+        
         const result = dataTypeValidation[key](item[key]);
         if (result) {
-          throw new Error(`Error porcessing ${sheetName}: Data validation failed for ${key} (${item[key]}) with message "${result}"`);
+          throw new Error(`Error processing ${sheetName}: Data validation failed for ${key} (${item[key]}) with message "${result}"`);
         }
       });
     })
