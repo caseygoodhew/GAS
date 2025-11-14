@@ -1,3 +1,18 @@
+const sumProp = (arr, prop) => {
+  return arr.reduce((s, item) => {
+    if (typeof item[prop] === 'number') {
+      return s + item[prop];
+    }
+    return s;
+  }, 0)
+}
+
+const sumProps = (arr, props) => {
+  return props.reduce((sum, prop) => {
+    return sum + sumProp(arr, prop);
+  }, 0);
+}
+
 // I had a total of 30 NVDA shares when the stock split. 
 // I was awarded an additional 270 shares. 
 // This gives a total of 300 shares against my original 30 shares, so 10:1 split. 
@@ -80,15 +95,6 @@ const csthConsolidateDistributedActions = (csthColumns, constants) => {
 
   const dateFormattingOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
   const groupableActions = [BUY, SELL, AWARD, DIVIDEND];
-
-  const sumProp = (arr, prop) => {
-      return arr.reduce((s, item) => {
-        if (typeof item[prop] === 'number') {
-          return s + item[prop];
-        }
-        return s;
-      }, 0)
-    }
 
   const exec = (data) => {
         
@@ -178,13 +184,8 @@ const csthConsolidateDistributedActions = (csthColumns, constants) => {
 
     // This is pure error checking - we add up all of the values that we've combined 
     // across the original and new datasets and ensure that they match (within 2 decimal places, rounded)
-    
-    const dataSum = sumProp(data, QUANTITY) + 
-                    sumProp(data, FEES) + 
-                    sumProp(data, AMOUNT);
-    const resultSum = sumProp(resultantData, QUANTITY) + 
-                    sumProp(resultantData, FEES) + 
-                    sumProp(resultantData, AMOUNT);
+    const dataSum = sumProps(data, [QUANTITY, FEES, AMOUNT]);
+    const resultSum = sumProps(resultantData, [QUANTITY, FEES, AMOUNT]);
 
     if (Math.round(dataSum * 100) !== Math.round(resultSum * 100)) {
       throw new Error('csthConsolidateDistributedActions: It looks like something has gone wrong here! Sums are different')

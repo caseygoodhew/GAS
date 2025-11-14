@@ -1,12 +1,15 @@
+const csthReaderDebug = () => {
+  execCSTH();
+}
+
 const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
   
   const exec = () => {
   
-    const csData = [];
-    /*const csData = readStockHistory(
+    const csData = readStockHistory(
       charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants)
     );
-*/
+
     const t212Data = readStockHistory(
       trading212TransactionHistoryReaderConfig(csthColumns, constants)
     );
@@ -106,7 +109,7 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
      * VALIDATE DATA QUALiTY
      **********************************/
     // Validate that only known columns have been created
-    const excludeKeys = ['EVENT_ID'];
+    const excludeKeys = ['EVENT_ID', 'OFFSET_ID'];
     const expectedKeys = [].concat(csthColumns.keys).filter(key => !excludeKeys.includes(key)).sort().join(', ');
     data.forEach(item => {
       const actualKeys =  Object.keys(item).sort().join(', ');

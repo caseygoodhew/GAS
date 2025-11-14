@@ -36,7 +36,6 @@ const toA1Notation = (colNumOrLetter, rowNum) => {
 
 const asValue = (valueOrCell) => {
   const isCell = typeof valueOrCell === 'object' && typeof valueOrCell.getValue === 'function'; 
-    
   return isCell ? valueOrCell.getValue() : valueOrCell;
 }
 
