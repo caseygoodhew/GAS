@@ -1,3 +1,7 @@
+const csthTrading212TransactionsDebug = () => {
+  execCSTH();
+}
+
 function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
   
   const sheetName = 'Trading 212 Transactions Raw';
@@ -105,6 +109,64 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
         
         return data;
       }
+    }, {
+      // Rewrites the Amount of the transaction to be the quantity * stock_price.
+      // Trading212 only applies fees/taxes on BUY transactions (from what I've seen) and 
+      // the "Total" inclues the fees (cost of the transaction). Our standard is that the amount
+      // should always be the taxable amount (i.e. excluding fees)
+      fn: data => {
+
+        const errors = [];
+
+        const result = data.map(item => {
+          const key = item[toKeyCase('EVENT ID')];
+          const action = item[toKeyCase('Action')];
+          const quantity = item[toKeyCase('No. of shares')];
+          const price = item[toKeyCase('Price / share')];
+          const exchange = item[toKeyCase('Exchange rate')];
+          const statedAmount = item[toKeyCase('Total')];
+
+          if (!isNumber(statedAmount)) {
+            throw new Error(`"Total" does not appear to be a number (${key})`)
+          }
+
+          if (isNumber(quantity) || isNumber(price) || isNumber(exchange)) {
+            if (!isNumber(quantity)) {
+              throw new Error(`"No. of shares" does not appear to be a number (${key})`)
+            }
+
+            if (!isNumber(price)) {
+              throw new Error(`"Price / share" does not appear to be a number (${key})`)
+            }
+
+            if (!isNumber(exchange)) {
+              throw new Error(`"Exchange rate" does not appear to be a number (${key})`)
+            }
+          } else {
+            return item;
+          }
+
+          let fees = item[toKeyCase('Withholding tax')] || 0;
+          fees += item[toKeyCase('Stamp duty')] || 0;
+          fees += item[toKeyCase('Stamp duty reserve tax')] || 0;
+          fees += item[toKeyCase('Ptm levy')] || 0;
+
+          const calculatedAmount = quantity * price / exchange;
+          // is within 2p
+          const within = 0.02;
+          if (!equalsPlusOrMinus(Math.abs(calculatedAmount), Math.abs(statedAmount) - Math.abs(fees), within)) {
+            errors.push(`(${key} ${action}) Difference between calculated & stated amounts (with fees) of ${Math.abs(calculatedAmount - Math.abs(statedAmount)) - fees}`);
+          }
+
+          return { ...item, [toKeyCase('Total')]: calculatedAmount }
+        });
+
+        if (errors.length) {
+          throw new Error(errors.join('\n'))
+        }
+
+        return result;
+      },
     }],
     process: {
       [SOURCE_ID]: toKeyCase('EVENT ID'),

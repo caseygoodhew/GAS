@@ -75,8 +75,6 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
         if (config.from === undefined) {
           result[key] = config.fn(item);
 
-        
-
         // [FEES]: {
         //   from: [
         //    toKeyCase('Stamp duty'),

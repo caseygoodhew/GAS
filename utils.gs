@@ -184,5 +184,10 @@ const readRate = (symbol, date) => {
   return values[index][1];
 }
 
+const equalsPlusOrMinus = (num1, num2, within) => {
+  const result =  Math.abs(num1 - num2) < Math.abs(within);
+  return result;
+}
+
 
 

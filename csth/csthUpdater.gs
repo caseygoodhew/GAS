@@ -40,7 +40,9 @@ const updateCombinedStockTransactionHistorySources = () => {
     : makeMockRange();
 
   data.forEach(item => item['EVENT_ID'] = makeEventId())
-  data = calculateTransactionSplits(csthColumns, {actions}, data);
+
+  data = csthApplySensibleRounding(csthColumns, {actions})(data);
+  data = calculateTransactionSplits(csthColumns, {actions})(data);
 
   const values = data.map(item => {
     return csthColumns.keys.reduce((array, key) => {
@@ -56,7 +58,7 @@ const updateCombinedStockTransactionHistorySources = () => {
 }
 
 // every SELL action must be backed by a corresponding BUY or AWARD transaction
-const calculateTransactionSplits = (csthColumns, constants, _data) => {
+const calculateTransactionSplits = (csthColumns, constants) => {
   const {
     SOURCE_ID,
     SOURCE_SHEET,
@@ -235,27 +237,35 @@ const calculateTransactionSplits = (csthColumns, constants, _data) => {
     }).flat();
   }
 
-  let stackedData = constructStackedData(_data);
-  stackedData = execCalculation(stackedData);
-  const data = deconstructStackedData(stackedData);
+  return (_data) => {
+    let stackedData = constructStackedData(_data);
+    stackedData = execCalculation(stackedData);
+    const data = deconstructStackedData(stackedData);
 
-  throw new Error('LOOK AT TODO')
-  // TODO:
-  // 1. On Split rows, split fees into new line as well
-  // 2. Verify that split rows sum up correctly (QUANTITY, FEES, AMOUNT) - there's something going on with amount
+    throw new Error('LOOK AT TODO')
+    // TODO:
+    // 1. On Split rows, split fees into new line as well
+    // 2. Verify that split rows sum up correctly (QUANTITY, FEES, AMOUNT) - there's something going on with amount
 
-  // TODO: Validate that everything adds up like it should
-  // This is pure error checking - we add up all of the values that we've combined 
-  // across the original and new datasets and ensure that they match (within 2 decimal places, rounded)
-  const initialSum = sumProps(_data, [QUANTITY, FEES, AMOUNT]);
-  const splitsFilteredOut = resultantData.filter(item => item[ACTION] !== SPLIT);
-  const resultantSum = sumProps(splitsFilteredOut, [QUANTITY, FEES, AMOUNT]);
+    // TODO: Validate that everything adds up like it should
+    // This is pure error checking - we add up all of the values that we've combined 
+    // across the original and new datasets and ensure that they match (within 2 decimal places, rounded)
+    const propsToCheck = [
+      QUANTITY, 
+      FEES, 
+      AMOUNT
+    ]
+    
+    const initialSum = sumProps(_data, propsToCheck);
+    const splitsFilteredOut = resultantData.filter(item => item[ACTION] !== SPLIT);
+    const resultantSum = sumProps(splitsFilteredOut, propsToCheck);
 
-  if (Math.round(initialSum * 100) !== Math.round(resultantSum * 100)) {
-    throw new Error('calculateTransactionSplits: It looks like something has gone wrong here! Sums are different')
+    if (!equalsPlusOrMinus(initialSum, resultantSum, 1)) {
+      throw new Error('calculateTransactionSplits: It looks like something has gone wrong here! Sums are different')
+    }
+
+    return data;
   }
-
-  return data;
 }
 
 

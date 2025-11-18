@@ -1,3 +1,7 @@
+const csthCharlesSchwabTransactionsDebug = () => {
+  execCSTH();
+}
+
 function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
   
   const sheetName = 'Charles Schwab Transactions Raw';
@@ -100,6 +104,61 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
         const actionsToDrop = ['Stock Merger'];
         return data.filter(item => !actionsToDrop.includes(item[toKeyCase('Action')]));
       }
+    }, {
+      // Rewrites the Amount of the transaction to be the quantity * stock_price.
+      // Charles Scwab only applies fees/taxes on SELL transactions (from what I've seen) and 
+      // the "Amount" inclues the fees (cost of the transaction). Our standard is that the amount
+      // should always be the taxable amount (i.e. excluding fees)
+      fn: data => {
+
+        const errors = [];
+
+        const result = data.map(item => {
+          const key = item[toKeyCase('EVENT ID')];
+          const action = item[toKeyCase('Action')];
+          const quantity = item[toKeyCase('Quantity')];
+          const price = item[toKeyCase('Price')];
+          const exchange = item[toKeyCase('Exchange rate')];
+          const statedAmount = item[toKeyCase('Amount')];
+
+          if (isEmpty(statedAmount)) {
+            return item;
+          }
+
+          if (!isNumber(statedAmount)) {
+            throw new Error(`"Amount" does not appear to be a number (${key})`)
+          }
+
+          if (isNumber(quantity) || isNumber(price) || isNumber(exchange)) {
+            if (!isNumber(quantity)) {
+              throw new Error(`"Quantity" does not appear to be a number (${key})`)
+            }
+
+            if (!isNumber(price)) {
+              throw new Error(`"Price" does not appear to be a number (${key})`)
+            }
+          } else {
+            return item;
+          }
+
+          const fees = item[toKeyCase('Fees & Comm')] || 0;
+
+          const calculatedAmount = quantity * price;
+          // is within 2 cents
+          const within = 0.02;
+          if (!equalsPlusOrMinus(Math.abs(calculatedAmount), Math.abs(statedAmount) + Math.abs(fees), within)) {
+            errors.push(`(${key} ${action}) Difference between calculated & stated amounts (with fees) of ${Math.abs(calculatedAmount - Math.abs(statedAmount)) + fees}`);
+          } 
+
+          return { ...item, [toKeyCase('Amount')]: calculatedAmount }
+        });
+
+        if (errors.length) {
+          throw new Error(errors.join('\n'))
+        }
+
+        return result;
+      },
     }],
     process: {
       [SOURCE_ID]: toKeyCase('EVENT ID'),
