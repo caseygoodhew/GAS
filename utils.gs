@@ -44,6 +44,19 @@ const isNumber = (valueOrCell) => {
   return typeof value === 'number';
 }
 
+const isArray = (o) => {
+  return Array.isArray(o);
+}
+
+const isObject = (o) => {
+  return Object.prototype.toString.call(o) === '[object Object]';
+}
+
+const isString = (valueOrCell) => {
+  const value = asValue(valueOrCell);
+  return typeof value === 'string';
+}
+
 const isEmpty = (valueOrCell) => {
   const value = asValue(valueOrCell);
 

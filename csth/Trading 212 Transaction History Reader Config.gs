@@ -5,13 +5,57 @@ const csthTrading212TransactionsDebug = () => {
 function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
   
   const sheetName = 'Trading 212 Transactions Raw';
-  const toKeyCase = value => String(value).replace(/ /g, '_').toUpperCase();
+  const t212Sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  const t212Columns = initLabelledColumns(t212Sheet, [
+    'T212_EVENT_ID',
+    'T212_ACTION',
+    'T212_TIME',
+    'T212_TICKER',
+    'T212_NO_OF_SHARES',
+    'T212_PRICE_SHARE',
+    'T212_EXCHANGE_RATE',
+    'T212_TOTAL',
+    // T212_RESULT,  <- this column contains the capital gains on the SELL (and can be ignored)
+    
+    'T212_WITHHOLDING_TAX',
+    'T212_STAMP_DUTY',
+    'T212_STAMP_DUTY_RESERVE_TAX',
+    'T212_PTM_LEVY',
+    
+    'T212_CURRENCY_PRICE_SHARE',
+    'T212_CURRENCY_TOTAL',
+    'T212_CURRENCY_WITHHOLDING_TAX',
+    'T212_CURRENCY_STAMP_DUTY',
+    'T212_CURRENCY_STAMP_DUTY_RESERVE_TAX',
+    'T212_CURRENCY_PTM_LEVY',
+  ]);
+
+  const {
+    T212_EVENT_ID,
+    T212_ACTION,
+    T212_TIME,
+    T212_TICKER,
+    T212_NO_OF_SHARES,
+    T212_PRICE_SHARE,
+    T212_EXCHANGE_RATE,
+    T212_TOTAL,
+    
+    T212_WITHHOLDING_TAX,
+    T212_STAMP_DUTY,
+    T212_STAMP_DUTY_RESERVE_TAX,
+    T212_PTM_LEVY,
+    
+    T212_CURRENCY_TOTAL,
+    T212_CURRENCY_WITHHOLDING_TAX,
+    T212_CURRENCY_STAMP_DUTY,
+    T212_CURRENCY_STAMP_DUTY_RESERVE_TAX,
+    T212_CURRENCY_PTM_LEVY,
+  } = t212Columns;
 
   const {
     SOURCE_ID,
     SOURCE_SHEET,
     DATE,
-    TAX_YEAR,
     ACTION,
     SYMBOL,
     QUANTITY,
@@ -49,35 +93,17 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
   return {
     sheetName,
     layout: {
-      columns: [
-        'EVENT ID',
-        'Time',
-        'Action',
-        'Ticker',
-        'No. of shares',
-        'Price / share',
-        'Currency (Price / share)',
-        'Withholding tax',
-        'Exchange rate',
-        // 'Result' <- this column contains the capital gains on the SELL (and can be ignored)
-        'Total',
-        'Currency (Total)',
-        'Stamp duty',
-        'Currency (Stamp duty)', 
-        'Stamp duty reserve tax',
-        'Currency (Stamp duty reserve tax)', 
-        'Ptm levy',
-        'Currency (Ptm levy)',
-      ].map(toKeyCase)
+      columns: t212Columns
     },
     preProcess: [{
       // 1. If a witholding tax is ever non-zero, create a new line item for it with the action "Withholding tax"
       fn: data => {
         const withholdingTaxLines = data.filter(item => {
-          const value = item[toKeyCase('Withholding Tax')];
+          const value = item[T212_WITHHOLDING_TAX];
           return typeof value === 'number' && value !== 0;
         })
 
+        // Note that Withholding Tax is GBX, so any value would need to be converted
         if (withholdingTaxLines.length > 0) {
           // This should probably create the line using a split function, but at the
           // time of implementation, there wasn't a use case for it
@@ -89,14 +115,14 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     }, {
       // 2. Expect that ['Currency (Stamp duty)', 'Currency (Stamp duty reserve tax)', 'Currency (Ptm levy)'] are always the same as 'Currency (Total)'
       fn: data => {
-        const baseLabel = 'Currency (Total)';
-        const expectSameLabels = ['Currency (Stamp duty)', 'Currency (Stamp duty reserve tax)', 'Currency (Ptm levy)']
+        const baseLabel = T212_CURRENCY_TOTAL;
+        const expectSameLabels = [T212_CURRENCY_STAMP_DUTY, T212_CURRENCY_STAMP_DUTY_RESERVE_TAX, T212_CURRENCY_PTM_LEVY]
         
         data.forEach(item => {
-          const key = item[toKeyCase('EVENT ID')];
-          const base = item[toKeyCase(baseLabel)];
+          const key = item[T212_EVENT_ID];
+          const base = item[baseLabel];
           
-          const expectSame = expectSameLabels.map(label => item[toKeyCase(label)]);
+          const expectSame = expectSameLabels.map(label => item[label]);
           
           expectSame.forEach((value, index) => {
             if (isEmpty(value)) { return; }
@@ -119,12 +145,12 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
         const errors = [];
 
         const result = data.map(item => {
-          const key = item[toKeyCase('EVENT ID')];
-          const action = item[toKeyCase('Action')];
-          const quantity = item[toKeyCase('No. of shares')];
-          const price = item[toKeyCase('Price / share')];
-          const exchange = item[toKeyCase('Exchange rate')];
-          const statedAmount = item[toKeyCase('Total')];
+          const key = item[T212_EVENT_ID];
+          const action = item[T212_ACTION];
+          const quantity = item[T212_NO_OF_SHARES];
+          const price = item[T212_PRICE_SHARE];
+          const exchange = item[T212_EXCHANGE_RATE];
+          const statedAmount = item[T212_TOTAL];
 
           if (!isNumber(statedAmount)) {
             throw new Error(`"Total" does not appear to be a number (${key})`)
@@ -146,10 +172,11 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
             return item;
           }
 
-          let fees = item[toKeyCase('Withholding tax')] || 0;
-          fees += item[toKeyCase('Stamp duty')] || 0;
-          fees += item[toKeyCase('Stamp duty reserve tax')] || 0;
-          fees += item[toKeyCase('Ptm levy')] || 0;
+          // Note that we can't just add Witholding Tax because it's in GBX - currently, it's always 0 (and there's a check for this)
+          let fees = 0; // item[T212_WITHHOLDING_TAX] || 0; 
+          fees += item[T212_STAMP_DUTY] || 0;
+          fees += item[T212_STAMP_DUTY_RESERVE_TAX] || 0;
+          fees += item[T212_PTM_LEVY] || 0;
 
           const calculatedAmount = quantity * price / exchange;
           // is within 2p
@@ -158,7 +185,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
             errors.push(`(${key} ${action}) Difference between calculated & stated amounts (with fees) of ${Math.abs(calculatedAmount - Math.abs(statedAmount)) - fees}`);
           }
 
-          return { ...item, [toKeyCase('Total')]: calculatedAmount }
+          return { ...item, [T212_TOTAL]: calculatedAmount }
         });
 
         if (errors.length) {
@@ -169,17 +196,13 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
       },
     }],
     process: {
-      [SOURCE_ID]: toKeyCase('EVENT ID'),
+      [SOURCE_ID]: T212_EVENT_ID,
       [SOURCE_SHEET]: {
         fn: () => sheetName,
       },
-      [DATE]: toKeyCase('Time'), 
-      [TAX_YEAR]: {
-        from: toKeyCase('Time'),
-        fn: toTaxYear
-      },
+      [DATE]: T212_TIME, 
       [ACTION]: {
-        from: toKeyCase('Action'),
+        from: T212_ACTION,
         fn: (action) => {
           switch (action) {
             case 'Deposit':
@@ -205,12 +228,12 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
           }
         }
       },
-      [SYMBOL]: toKeyCase('Ticker'),
-      [QUANTITY]: toKeyCase('No. of shares'),
+      [SYMBOL]: T212_TICKER,
+      [QUANTITY]: T212_NO_OF_SHARES,
       [SHARE_PRICE]: {
         from: [
-          toKeyCase('Price / share'), 
-          toKeyCase('Exchange rate'), 
+          T212_PRICE_SHARE, 
+          T212_EXCHANGE_RATE, 
         ],
         fn: (price, exRate) => {
           
@@ -230,9 +253,9 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
       },
       [FEES]: {
         from: [
-          toKeyCase('Stamp duty'),
-          toKeyCase('Stamp duty reserve tax'),
-          toKeyCase('Ptm levy'),
+          T212_STAMP_DUTY,
+          T212_STAMP_DUTY_RESERVE_TAX,
+          T212_PTM_LEVY,
         ],
         fn: (stampDuty, stampDutyReserve, pmtLevy) => {
           assertIsNumberOrEmpty(stampDuty, "Stamp duty");
@@ -247,7 +270,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
         }
       },
       [AMOUNT]: {
-        from: toKeyCase('Total'),
+        from: T212_TOTAL,
         fn: (amount) => {
           if (isNaN(amount)) {
             return amount;
@@ -256,7 +279,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
           return Math.abs(amount);
         }
       },
-      [CURRENCY]: toKeyCase('Currency (Total)')
+      [CURRENCY]: T212_CURRENCY_TOTAL
     },
     postProcess: [{
       // Managing Transactions that have been broken apart into small pieces (e.g. buy 1000 shares, but there are 10x 100 share transactions)

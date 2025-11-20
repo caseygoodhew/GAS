@@ -17,6 +17,22 @@ const updateCombinedStockTransactionHistorySources = () => {
     'OFFSET_ID'
   ]);
 
+  const {
+    SOURCE_ID,
+    SOURCE_SHEET,
+    EVENT_ID,
+    DATE,
+    TAX_YEAR,
+    ACTION,
+    SYMBOL,
+    QUANTITY,
+    SHARE_PRICE,
+    FEES,
+    AMOUNT,
+    CURRENCY,
+    OFFSET_ID
+  } = csthColumns;
+
   const actions = {
     BUY: 'BUY',
     SELL: 'SELL',
@@ -28,34 +44,109 @@ const updateCombinedStockTransactionHistorySources = () => {
     DEPOSIT: 'DEPOSIT',
     NONE: 'NONE'
   };
+
+  const {
+    BUY,
+    SELL,
+    AWARD,
+    DIVIDEND,
+    TAX,
+    SPLIT,
+    WITHDRAW,
+    DEPOSIT,
+    NONE
+  } = actions;
+
+  const getFnNameAndConfig = (funcNameAndMaybeConfig) => {
+    if (isArray(funcNameAndMaybeConfig)) {
+      return {
+        fnName: funcNameAndMaybeConfig[0], 
+        config: funcNameAndMaybeConfig[1]
+      }
+    } else {
+      return {
+        fnName: funcNameAndMaybeConfig
+      }
+    }
+  }
+
+  const execAndValidate = (data, ...functions) => {
+    return functions.reduce((input, funcNameAndMaybeConfig) => {
+      
+      const { fnName, config } = getFnNameAndConfig(funcNameAndMaybeConfig);
+      
+      if (!/^[a-z0-9_]+$/i.test(fnName)) {
+        throw new Error(`The named function can only include alpha-numeric characters, as well as underscore _`);
+      }
+
+      const fn = eval(fnName);
+      
+      const result = fn(csthColumns, {actions})(input);
+
+      validateTotalsAreEquivalent(csthColumns, {actions})(fnName, input, result, config);
+      return result;
+    
+    }, data);
+  }
   
-  const firstDataRow = 3;
+  const execUpdate = () => {
 
-  const helper = makeHelper(csthSheet, csthColumns);
+    let data = readCombinedStockTransactionHistorySources(csthColumns, {actions});
+    
+    // manual updates common to all data sets
+    data.forEach(item => {
+      item[EVENT_ID] = makeEventId();
+      item[TAX_YEAR] = toTaxYear(item[DATE]);
+    })
 
-  let data = readCombinedStockTransactionHistorySources(csthColumns, {actions});
-  
-  const existingDataRange = (csthSheet.getLastRow() >= firstDataRow) 
-    ? helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, csthSheet.getLastRow()) 
-    : makeMockRange();
+    data = execAndValidate(data,
+      'csthApplySensibleRounding',
+      ['calculateTransactionSplits', { filter: item => item[ACTION] !== SPLIT }]
+    );
 
-  data.forEach(item => item['EVENT_ID'] = makeEventId())
+    /************************************************
+     * Adjust the data
+     */
+    
+    // converts the data set into a correctly shaped array
+    const values = data.map(item => {
+      return csthColumns.keys.reduce((array, key) => {
+        array[csthColumns.colLabelToNumMap[key] - csthColumns.first] = item[key];
+        return array;
+      }, [])
+    })
 
-  data = csthApplySensibleRounding(csthColumns, {actions})(data);
-  data = calculateTransactionSplits(csthColumns, {actions})(data);
+    /************************************************
+     * Prep and update the destination sheet
+     */
+    const helper = makeHelper(csthSheet, csthColumns);
+    // TODO: this should come from a magic coordinate
+    const firstDataRow = 3;
 
-  const values = data.map(item => {
-    return csthColumns.keys.reduce((array, key) => {
-      array[csthColumns.colLabelToNumMap[key] - csthColumns.first] = item[key];
-      return array;
-    }, [])
-  })
+    const existingDataRange = (csthSheet.getLastRow() >= firstDataRow) 
+      ? helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, csthSheet.getLastRow()) 
+      : makeMockRange();
 
+    // clear existing data (if any exists)
+    existingDataRange.clearContent();
+    
+    // set the values
+    helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, firstDataRow + values.length - 1).setValues(values);
+  }
 
-  // clear existing data (if any exists)
-  existingDataRange.clearContent();
-  helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, firstDataRow + values.length - 1).setValues(values)
+  execUpdate();
 }
+
+
+
+
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+
 
 // every SELL action must be backed by a corresponding BUY or AWARD transaction
 const calculateTransactionSplits = (csthColumns, constants) => {
@@ -74,6 +165,10 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     CURRENCY,
     OFFSET_ID
   } = csthColumns;
+
+  if (!isString(QUANTITY)) {
+    throw new Error(`Are you sure that you passed the correct parameters?`)
+  }
 
   const {
     BUY,
@@ -242,14 +337,18 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     stackedData = execCalculation(stackedData);
     const data = deconstructStackedData(stackedData);
 
-    throw new Error('LOOK AT TODO')
+    //throw new Error('LOOK AT TODO')
     // TODO:
     // 1. On Split rows, split fees into new line as well
-    // 2. Verify that split rows sum up correctly (QUANTITY, FEES, AMOUNT) - there's something going on with amount
+    // 2. SPLIT has double meaning - we should differentiate Market Splits and Record level Splits
+    
+    
 
     // TODO: Validate that everything adds up like it should
     // This is pure error checking - we add up all of the values that we've combined 
     // across the original and new datasets and ensure that they match (within 2 decimal places, rounded)
+    //validateTotalsAreEquivalent('', _data, data, { filter: item => item[ACTION] !== SPLIT });
+    /*
     const propsToCheck = [
       QUANTITY, 
       FEES, 
@@ -262,7 +361,7 @@ const calculateTransactionSplits = (csthColumns, constants) => {
 
     if (!equalsPlusOrMinus(initialSum, resultantSum, 1)) {
       throw new Error('calculateTransactionSplits: It looks like something has gone wrong here! Sums are different')
-    }
+    }*/
 
     return data;
   }

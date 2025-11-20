@@ -5,13 +5,33 @@ const csthCharlesSchwabTransactionsDebug = () => {
 function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
   
   const sheetName = 'Charles Schwab Transactions Raw';
-  const toKeyCase = value => String(value).replace(/ /g, '_').toUpperCase();
+  const csSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  const csColumns = initLabelledColumns(csSheet, [
+    'CS_EVENT_ID',
+    'CS_DATE',
+    'CS_ACTION',
+    'CS_SYMBOL',
+    'CS_QUANTITY',
+    'CS_PRICE',
+    'CS_FEES_COMM',
+    'CS_AMOUNT'
+  ]);
+
+  const {
+    CS_EVENT_ID,
+    CS_DATE,
+    CS_ACTION,
+    CS_SYMBOL,
+    CS_QUANTITY,
+    CS_PRICE,
+    CS_FEES_COMM,
+    CS_AMOUNT
+  } = csColumns;
 
   const {
     SOURCE_ID,
     SOURCE_SHEET,
     DATE,
-    TAX_YEAR,
     ACTION,
     SYMBOL,
     QUANTITY,
@@ -38,27 +58,16 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
   return {
     sheetName,
     layout: {
-      columns: [
-        'EVENT ID',
-        'Date',
-        'Action',
-        'Symbol',
-        'Quantity',
-        'Price',
-        'Fees & Comm',
-        'Amount'
-      ].map(toKeyCase)
+      columns: csColumns
     },
     preProcess: [{
       // check if dates are actual dates or something like 08/18/2025 as of 08/15/2025
       fn: data => {
         return data.map(item => {
-          const key = toKeyCase('Date');
-          
-          if (!isDate(item[key])) {
+          if (!isDate(item[CS_DATE])) {
             const re = /[0-9]{2,2}\/[0-9]{2,2}\/[0-9]{4,4} as of ([0-9]{2,2})\/([0-9]{2,2})\/([0-9]{4,4})/gm;
-            const matches = re.exec(item[key]);
-            item[key] = new Date(parseInt(matches[3]), parseInt(matches[1]) - 1, parseInt(matches[2]));
+            const matches = re.exec(item[CS_DATE]);
+            item[CS_DATE] = new Date(parseInt(matches[3]), parseInt(matches[1]) - 1, parseInt(matches[2]));
           }
 
           return item;
@@ -72,9 +81,9 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
         };
         
         return data.map(item => {
-          const symbol = item[toKeyCase('Symbol')];
+          const symbol = item[CS_SYMBOL];
           if (changes[symbol]) {
-            item[toKeyCase('Symbol')] = changes[symbol];
+            item[CS_SYMBOL] = changes[symbol];
           }
           return item;
         });
@@ -83,16 +92,16 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
       // Update the award price and amount for RSUs  
       fn: data => {
         return data.map(item => {
-          if (item[toKeyCase('Action')] == 'Stock Plan Activity') {
-            const date = item[toKeyCase('Date')];
-            const symbol = item[toKeyCase('Symbol')];
-            const quantity = item[toKeyCase('Quantity')];
+          if (item[CS_ACTION] == 'Stock Plan Activity') {
+            const date = item[CS_DATE];
+            const symbol = item[CS_SYMBOL];
+            const quantity = item[CS_QUANTITY];
             
             date.setDate(date.getDate() - 1);
             const price = readRate(symbol, date);
 
-            item[toKeyCase('Price')] = price;
-            item[toKeyCase('Amount')] = price * quantity;
+            item[CS_PRICE] = price;
+            item[CS_AMOUNT] = price * quantity;
           }
 
           return item;
@@ -102,7 +111,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
       // Remove Stock Merger actions
       fn: data => {
         const actionsToDrop = ['Stock Merger'];
-        return data.filter(item => !actionsToDrop.includes(item[toKeyCase('Action')]));
+        return data.filter(item => !actionsToDrop.includes(item[CS_ACTION]));
       }
     }, {
       // Rewrites the Amount of the transaction to be the quantity * stock_price.
@@ -114,12 +123,11 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
         const errors = [];
 
         const result = data.map(item => {
-          const key = item[toKeyCase('EVENT ID')];
-          const action = item[toKeyCase('Action')];
-          const quantity = item[toKeyCase('Quantity')];
-          const price = item[toKeyCase('Price')];
-          const exchange = item[toKeyCase('Exchange rate')];
-          const statedAmount = item[toKeyCase('Amount')];
+          const key = item[CS_EVENT_ID];
+          const action = item[CS_ACTION];
+          const quantity = item[CS_QUANTITY];
+          const price = item[CS_PRICE];
+          const statedAmount = item[CS_AMOUNT];
 
           if (isEmpty(statedAmount)) {
             return item;
@@ -129,7 +137,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
             throw new Error(`"Amount" does not appear to be a number (${key})`)
           }
 
-          if (isNumber(quantity) || isNumber(price) || isNumber(exchange)) {
+          if (isNumber(quantity) || isNumber(price)) {
             if (!isNumber(quantity)) {
               throw new Error(`"Quantity" does not appear to be a number (${key})`)
             }
@@ -141,7 +149,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
             return item;
           }
 
-          const fees = item[toKeyCase('Fees & Comm')] || 0;
+          const fees = item[CS_FEES_COMM] || 0;
 
           const calculatedAmount = quantity * price;
           // is within 2 cents
@@ -150,7 +158,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
             errors.push(`(${key} ${action}) Difference between calculated & stated amounts (with fees) of ${Math.abs(calculatedAmount - Math.abs(statedAmount)) + fees}`);
           } 
 
-          return { ...item, [toKeyCase('Amount')]: calculatedAmount }
+          return { ...item, [CS_AMOUNT]: calculatedAmount }
         });
 
         if (errors.length) {
@@ -161,17 +169,13 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
       },
     }],
     process: {
-      [SOURCE_ID]: toKeyCase('EVENT ID'),
+      [SOURCE_ID]: CS_EVENT_ID,
       [SOURCE_SHEET]: {
         fn: () => sheetName,
       },
-      [DATE]: toKeyCase('Date'), 
-      [TAX_YEAR]: {
-        from: toKeyCase('Date'),
-        fn: toTaxYear
-      },
+      [DATE]: CS_DATE, 
       [ACTION]: {
-        from: toKeyCase('Action'),
+        from: CS_ACTION,
         fn: (action) => {
           switch (action) {
             case 'Buy':
@@ -208,12 +212,12 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
           }
         }
       },
-      [SYMBOL]: toKeyCase('Symbol'),
-      [QUANTITY]: toKeyCase('Quantity'),
-      [SHARE_PRICE]: toKeyCase('Price'),
-      [FEES]: toKeyCase('Fees & Comm'),
+      [SYMBOL]: CS_SYMBOL,
+      [QUANTITY]: CS_QUANTITY,
+      [SHARE_PRICE]: CS_PRICE,
+      [FEES]: CS_FEES_COMM,
       [AMOUNT]: {
-        from: toKeyCase('Amount'),
+        from: CS_AMOUNT,
         fn: (amount) => {
           if (isNaN(amount)) {
             return amount;
@@ -223,7 +227,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
         }
       },
       [CURRENCY]: {
-        from: toKeyCase('Amount'),
+        from: CS_AMOUNT,
         fn: () => 'USD'
       }
     },
