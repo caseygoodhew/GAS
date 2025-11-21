@@ -30,7 +30,6 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
 
   const {
     SOURCE_ID,
-    SOURCE_SHEET,
     DATE,
     ACTION,
     SYMBOL,
@@ -40,6 +39,10 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     AMOUNT,
     CURRENCY,
   } = csthColumns;
+
+  if (!isString(ACTION)) {
+    throw new Error(`Are you sure that you passed the correct parameters?`)
+  }
 
   const {
     BUY,

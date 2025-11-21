@@ -54,7 +54,6 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
 
   const {
     SOURCE_ID,
-    SOURCE_SHEET,
     DATE,
     ACTION,
     SYMBOL,
@@ -64,6 +63,10 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     AMOUNT,
     CURRENCY,
   } = csthColumns;
+
+  if (!isString(ACTION)) {
+    throw new Error(`Are you sure that you passed the correct parameters?`)
+  }
 
   const {
     BUY,
