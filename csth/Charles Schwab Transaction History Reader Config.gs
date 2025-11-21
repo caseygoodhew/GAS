@@ -65,6 +65,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
       fn: data => {
         return data.map(item => {
           if (!isDate(item[CS_DATE])) {
+            // 08/18/2025 as of 08/15/2025
             const re = /[0-9]{2,2}\/[0-9]{2,2}\/[0-9]{4,4} as of ([0-9]{2,2})\/([0-9]{2,2})\/([0-9]{4,4})/gm;
             const matches = re.exec(item[CS_DATE]);
             item[CS_DATE] = new Date(parseInt(matches[3]), parseInt(matches[1]) - 1, parseInt(matches[2]));
@@ -109,6 +110,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
       }
     }, {
       // Remove Stock Merger actions
+      // (I'm not sure what they are exactly, but they +/- cancel out)
       fn: data => {
         const actionsToDrop = ['Stock Merger'];
         return data.filter(item => !actionsToDrop.includes(item[CS_ACTION]));
@@ -116,7 +118,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     }, {
       // Rewrites the Amount of the transaction to be the quantity * stock_price.
       // Charles Scwab only applies fees/taxes on SELL transactions (from what I've seen) and 
-      // the "Amount" inclues the fees (cost of the transaction). Our standard is that the amount
+      // the "Amount" deducts the fees (cost of the transaction). Our standard is that the amount
       // should always be the taxable amount (i.e. excluding fees)
       fn: data => {
 
@@ -170,9 +172,6 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     }],
     process: {
       [SOURCE_ID]: CS_EVENT_ID,
-      [SOURCE_SHEET]: {
-        fn: () => sheetName,
-      },
       [DATE]: CS_DATE, 
       [ACTION]: {
         from: CS_ACTION,
@@ -223,6 +222,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
             return amount;
           }
 
+          // amounts should always be +'ve
           return Math.abs(amount);
         }
       },
@@ -231,10 +231,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
         fn: () => 'USD'
       }
     },
-    postProcess: [{
-      // Managing Stock Split
-      fn: csthConsolidateMarketSplits(csthColumns, constants)
-    }],
+    postProcess: [],
   };
 }
 

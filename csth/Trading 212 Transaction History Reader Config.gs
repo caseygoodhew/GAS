@@ -78,7 +78,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
   const EMPTY = '';
 
   const assertIsNumberOrEmpty = (value, label) => {
-    if (value === EMPTY) {
+    if (isEmpty(value)) {
       return;
     }
 
@@ -100,7 +100,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
       fn: data => {
         const withholdingTaxLines = data.filter(item => {
           const value = item[T212_WITHHOLDING_TAX];
-          return typeof value === 'number' && value !== 0;
+          return isNumber(value) && value !== 0;
         })
 
         // Note that Withholding Tax is GBX, so any value would need to be converted
@@ -197,9 +197,6 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     }],
     process: {
       [SOURCE_ID]: T212_EVENT_ID,
-      [SOURCE_SHEET]: {
-        fn: () => sheetName,
-      },
       [DATE]: T212_TIME, 
       [ACTION]: {
         from: T212_ACTION,
@@ -240,11 +237,11 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
           assertIsNumberOrEmpty(price, "Price / Share");
           assertIsNumberOrEmpty(exRate, "Exchange Rate");
           
-          if (price === EMPTY && exRate === EMPTY) {
+          if (isEmpty(price) && isEmpty(exRate)) {
             return EMPTY;
           }
 
-          if (price === EMPTY || exRate === EMPTY) {
+          if (isEmpty(price) || isEmpty(exRate)) {
             throw new Error('Expected both "Price / Share" and "Exchange Rate" to be set, or not set. Encountered a mixed scenario')
           }
           
@@ -262,7 +259,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
           assertIsNumberOrEmpty(stampDutyReserve, "Stamp duty reserve tax");
           assertIsNumberOrEmpty(pmtLevy, "Ptm levy");
           
-          if (stampDuty === EMPTY && stampDutyReserve === EMPTY && pmtLevy === EMPTY) {
+          if (isEmpty(stampDuty) && isEmpty(stampDutyReserve) && isEmpty(pmtLevy)) {
             return EMPTY;
           }
 
@@ -281,10 +278,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
       },
       [CURRENCY]: T212_CURRENCY_TOTAL
     },
-    postProcess: [{
-      // Managing Transactions that have been broken apart into small pieces (e.g. buy 1000 shares, but there are 10x 100 share transactions)
-      fn: csthConsolidateDistributedActions(csthColumns, constants)
-    }],
+    postProcess: [],
   };
 }
 

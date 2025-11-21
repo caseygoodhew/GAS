@@ -81,7 +81,10 @@ const updateCombinedStockTransactionHistorySources = () => {
 
       const fn = eval(fnName);
       
-      const result = fn(csthColumns, {actions})(input);
+      const result = fn(csthColumns, {actions})(
+        // send a copy of the array so that fn is free to mutate values
+        input.map(item => ({...item}))
+      );
 
       validateTotalsAreEquivalent(csthColumns, {actions})(fnName, input, result, config);
       return result;
@@ -97,9 +100,11 @@ const updateCombinedStockTransactionHistorySources = () => {
     data.forEach(item => {
       item[EVENT_ID] = makeEventId();
       item[TAX_YEAR] = toTaxYear(item[DATE]);
-    })
+    });
 
     data = execAndValidate(data,
+      'csthConsolidateMarketSplits',
+      'csthConsolidateDistributedActions',
       'csthApplySensibleRounding',
       ['calculateTransactionSplits', { filter: item => item[ACTION] !== SPLIT }]
     );

@@ -26,6 +26,7 @@ const sumProps = (arr, props) => {
 const csthConsolidateMarketSplits = (csthColumns, constants) => {
   
   const {
+    SOURCE_SHEET,
     DATE,
     ACTION,
     SYMBOL,
@@ -53,12 +54,19 @@ const csthConsolidateMarketSplits = (csthColumns, constants) => {
     
     stockSplits.forEach(split => { 
 
+      const splitSheet = split[SOURCE_SHEET];
       const splitDate = split[DATE];
       const splitSymbol = split[SYMBOL];
       const splitQuantity = split[QUANTITY];
 
       // Get all items for this symbol before the split date
-      const inscope = data.filter(item => item[SYMBOL] === splitSymbol && item[DATE] < splitDate && splitableActions.includes(item[ACTION]));
+      const inscope = data.filter(item => 
+        item[SOURCE_SHEET] === splitSheet &&
+        item[SYMBOL] === splitSymbol && 
+        item[DATE] < splitDate && 
+        splitableActions.includes(item[ACTION])
+      );
+      
       // add up the total number of shares
       const inscopeQuantity = inscope.reduce((sum, item) => sum + item[QUANTITY], 0);
       const totalQuantity = splitQuantity + inscopeQuantity;
@@ -66,7 +74,7 @@ const csthConsolidateMarketSplits = (csthColumns, constants) => {
       const multiplier = totalQuantity / inscopeQuantity;
       
       if (multiplier % 1 != 0) {
-        throw new Error(`Calculated a stock split multiplier for ${splitSymbol} on ${splitDate} that NOT a whole number (${multiplier})`)
+        throw new Error(`Calculated a stock split multiplier for ${splitSymbol} on ${splitDate} that NOT a whole number (${multiplier})`);
       }
 
       inscope.forEach(item => {
@@ -81,7 +89,8 @@ const csthConsolidateMarketSplits = (csthColumns, constants) => {
   return exec;
 }
 
-// Managing Transactions that have been broken apart into small pieces (e.g. buy 1000 shares, but there are 10x 100 share transactions)
+// Managing Transactions that have been broken apart into small pieces 
+// (e.g. buy 1000 shares, but there are 10x 100 share transactions)
 const csthConsolidateDistributedActions = (csthColumns, constants) => {
     
   const {
@@ -338,7 +347,7 @@ const csthApplySensibleRounding = (csthColumns, constants) => {
 
       // this means we've sold more than we've bought, so we would expect this to be very very close
       if (delta > 0.1) {
-        throw new Error(`After rounding, it seems that we've sold more ${transactions[0][SYMBOL]} stock than we've purchased (${sellSum} vs ${buySum})`)
+        throw new Error(`After rounding, it seems that we've sold more ${transactions[0].item[SYMBOL]} stock than we've purchased (${sellSum} vs ${buySum})`)
       }
 
       // so now we know that it's a small descrepency - let's adjust it against the SELL order with the most decimal places in the QUANTITY
@@ -416,7 +425,7 @@ const validateTotalsAreEquivalent = (csthColumns, constants) => {
       const ds2Sum = sumProp(ds2, prop);
 
       if (!equalsPlusOrMinus(ds1Sum, ds2Sum, marginOfError)) {
-        throw new Error(`[${context}] Sum of [${prop}]s are not equal. ${ds1Sum} vs ${ds2Sum} (diff of ${Math.abs(ds1Sum - ds2Sum)})`);
+        throw new Error(`[${context}] Sum of [${prop}]s are not equal. ${numberWithCommas(ds1Sum)} vs ${numberWithCommas(ds2Sum)} (diff of ${numberWithCommas(Math.abs(ds1Sum - ds2Sum))})`);
       }
     }); 
   }

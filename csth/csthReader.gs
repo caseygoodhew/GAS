@@ -4,6 +4,22 @@ const csthReaderDebug = () => {
 
 const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
   
+  const {
+    SOURCE_ID,
+    SOURCE_SHEET,
+    EVENT_ID,
+    DATE,
+    TAX_YEAR,
+    ACTION,
+    SYMBOL,
+    QUANTITY,
+    SHARE_PRICE,
+    FEES,
+    AMOUNT,
+    CURRENCY,
+    OFFSET_ID
+  } = csthColumns;
+
   const exec = () => {
   
     const csData = readStockHistory(
@@ -25,11 +41,8 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
     // we assume that the first data happens on row 3 (HEADING, heading, data...)
     const firstDataRow = 3;
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-    if (new Date() > new Date(2025, 10, 21)) {
-      throw new Error("Reminder to remove the columns definition and uncomment the line below it")
-    }
-    const columns = isArray(layout.columns) ? initLabelledColumns(sheet, layout.columns) : layout.columns;
-    // const columns = layout.columns;
+    
+    const columns = layout.columns;
     const helper = makeHelper(sheet, columns)
 
     /***********************************
@@ -43,10 +56,14 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
     );
 
     let data = helper.getRowValues(dataRange).map(row => {
-      return columns.keys.reduce((acc, colLabel) => {
+      const result = columns.keys.reduce((acc, colLabel) => {
         acc[colLabel] = row[columns.colLabelToNumMap[colLabel] - 1];
         return acc;
       }, {});
+
+      result[SOURCE_SHEET] = sheetName;
+
+      return result;
     });
     
     /***********************************
@@ -111,7 +128,7 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
      * VALIDATE DATA QUALiTY
      **********************************/
     // Validate that only known columns have been created
-    const excludeKeys = ['EVENT_ID', 'OFFSET_ID', 'TAX_YEAR'];
+    const excludeKeys = ['SOURCE_SHEET', 'EVENT_ID', 'OFFSET_ID', 'TAX_YEAR'];
     const expectedKeys = [].concat(csthColumns.keys).filter(key => !excludeKeys.includes(key)).sort().join(', ');
     data.forEach(item => {
       const actualKeys =  Object.keys(item).sort().join(', ');
@@ -155,7 +172,7 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
 
     const dataTypeValidation = {
       'SOURCE_ID': validators.isString,
-      'SOURCE_SHEET': validators.isString,
+      //'SOURCE_SHEET': validators.isString,
       'DATE': validators.isDate,
       'ACTION': validators.isOneOf(Object.values(constants.actions)),
       'SYMBOL': validators.isString,

@@ -202,5 +202,16 @@ const equalsPlusOrMinus = (num1, num2, within) => {
   return result;
 }
 
+const numberWithCommas = (valueOrCell) => {
+  const value = asValue(valueOrCell);
+  if (!isNumber(value)) {
+    return value;
+  }
+
+  const parts = value.toString().split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
+}
+
 
 
