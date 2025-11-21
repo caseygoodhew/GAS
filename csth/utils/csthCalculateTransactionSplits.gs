@@ -28,7 +28,7 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     BUY,
     SELL,
     AWARD,
-    SPLIT,
+    MANUAL_SPLIT,
   } = constants.actions;
 
   const buyActions = [BUY, AWARD];
@@ -51,23 +51,23 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     return data;
   }
 
-  const getUnusedQuantity = node => isEmpty(node[OFFSET_ID]) ? node[QUANTITY] : 0;
-  const getUsedQuantity = node => isEmpty(node[OFFSET_ID]) ? 0 : node[QUANTITY];
+  const getUnusedByProp = (node, prop) => isEmpty(node[OFFSET_ID]) ? node[prop] : 0;
+  const getUsedbyProp = (node, prop) => isEmpty(node[OFFSET_ID]) ? 0 : node[prop];
 
-  const sumQuantities = (...items) => {
+  const sumByProp = (items, prop) => {
     return items.reduce((sum, child) => {
-      const value = getUsedQuantity(child);
+      const value = getUsedbyProp(child, prop);
       return sum + value;
     }, 0);
   }
 
-  const quantityRemaining = (item) => {
-    const selfValue = getUnusedQuantity(item.self);
-    const childrenValue = sumQuantities(...item.children);
+const remainingByProp = (item, prop) => {
+    const selfValue = getUnusedByProp(item.self, prop);
+    const childrenValue = sumByProp(item.children, prop);
     const result = selfValue - childrenValue;
     
     if (result < 0) {
-      throw new Error(`Negative value remaining for source id "${item.self[SOURCE_ID]}"`)
+      throw new Error(`Negative value of [${prop}] remaining for source id "${item.self[SOURCE_ID]}"`)
     }
 
     if (Math.round(result * 10000) === 0) {
@@ -89,7 +89,7 @@ const calculateTransactionSplits = (csthColumns, constants) => {
 
   // available will be ordered by oldest first
   const processSellTransaction = (sellItem, availableBuys) => {
-    let sellRemaining = quantityRemaining(sellItem);
+    let sellRemaining = remainingByProp(sellItem, QUANTITY);
 
     for (let i = 0; i < availableBuys.length && sellRemaining !== 0; i++) {
       const buyItem = availableBuys[i];
@@ -98,15 +98,15 @@ const calculateTransactionSplits = (csthColumns, constants) => {
         continue;
       }
       
-      const buyRemaining = quantityRemaining(buyItem);
+      const buyRemaining = remainingByProp(buyItem, QUANTITY);
 
       if (buyRemaining === 0) {
         continue;
       }
 
-      recordOffset(sellItem, buyItem, Math.min(buyRemaining, sellRemaining));
+      recordOffsetByProp(sellItem, buyItem, QUANTITY, Math.min(buyRemaining, sellRemaining));
 
-      sellRemaining = quantityRemaining(sellItem);
+      sellRemaining = remainingByProp(sellItem, QUANTITY);
       const y = 0;
     }
 
@@ -115,41 +115,72 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     }
   }
 
-  const recordOffset = (sellItem, buyItem, quantity) => {
-    sellNode = getNodeToOffset(sellItem, quantity);
-    buyNode = getNodeToOffset(buyItem, quantity);
+  const recordOffsetByProp = (sellItem, buyItem, prop, value) => {
+    sellNode = getNodeToOffsetByProp(sellItem, prop, value);
+    buyNode = getNodeToOffsetByProp(buyItem, prop, value);
 
     sellNode[OFFSET_ID] = buyNode[EVENT_ID];
     buyNode[OFFSET_ID] = sellNode[EVENT_ID];
   }
 
-  const getNodeToOffset = (item, quantity) => {
-    const remaining = quantityRemaining(item);
+  const getNodeToOffsetByProp = (item, prop, value) => {
+    const remaining = remainingByProp(item, prop);
     
-    if (remaining < quantity) {
+    if (remaining < value) {
       throw new Error(`getNodeToOffset requires that there is available remaining quantity in the node being offset`);
     }
     
-    if (remaining === quantity && item.children.length === 0) {
+    if (remaining === value && item.children.length === 0) {
       return item.self;
     }
 
-    return splitTransaction(item, quantity);
+    switch (prop) {
+      case QUANTITY:
+        return splitTransactionByQuantity(item, value);
+      default:
+        throw new Error(`Split function not registered for prop [${prop}]`)
+    }
   }
 
-  const splitTransaction = (item, quantity) => {
-    const remaining = quantityRemaining(item);
+  const splitTransactionByQuantity = (item, quantity) => {
+    const remaining = remainingByProp(item, QUANTITY);
     if (remaining < quantity) {
       throw new Error(`Split transaction by ${quantity} units but only ${remaining} units remain for source id ${item[SOURCE_ID]}`)
     }
 
+    return splitTransaction(
+      item,
+      {
+        [QUANTITY]: quantity, 
+        [AMOUNT]: item.self[SHARE_PRICE] * quantity, 
+        [FEES]: '', 
+      }
+    )
+  }
+
+  const splitTransactionByFees = (item, fees) => {
+    const remaining = remainingByProp(item, FEES);
+    if (remaining < fees) {
+      throw new Error(`Split transaction by ${fees} but only ${remaining} units remain for source id ${item[SOURCE_ID]}`)
+    }
+
+    return splitTransaction(
+      item,
+      {
+        [QUANTITY]: '', 
+        [SHARE_PRICE]: '', 
+        [AMOUNT]: '', 
+        [FEES]: fees, 
+      }
+    )
+  } 
+
+  const splitTransaction = (item, withProps) => {
     const split = { 
       ...item.self, 
       [SOURCE_ID]: '',
       [EVENT_ID]: makeEventId(),
-      [QUANTITY]: quantity, 
-      [AMOUNT]: item.self[SHARE_PRICE] * quantity, 
-      [FEES]: '', 
+      ...withProps
     };
 
     item.children.splice(0, 0, split);
@@ -172,14 +203,20 @@ const calculateTransactionSplits = (csthColumns, constants) => {
         return item.self;
       }
 
-      const quantity = quantityRemaining(item);
+      const quantity = remainingByProp(item, QUANTITY);
       if (quantity > 0) {
         // fill any remaining portions
-        splitTransaction(item, quantity);
+        splitTransactionByQuantity(item, quantity);
+      }
+
+      const fees = remainingByProp(item, FEES);
+      if (fees > 0) {
+        // fill any remaining portions
+        splitTransactionByFees(item, fees)
       }
 
       return [
-        { ...item.self, [ACTION]: SPLIT },
+        { ...item.self, [ACTION]: MANUAL_SPLIT },
         ...item.children
       ]
       
@@ -194,7 +231,6 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     //throw new Error('LOOK AT TODO')
     // TODO:
     // 1. On Split rows, split fees into new line as well
-    // 2. SPLIT has double meaning - we should differentiate Market Splits and Record level Splits
 
     return data;
   }

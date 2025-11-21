@@ -42,6 +42,7 @@ const updateCombinedStockTransactionHistorySources = () => {
     SPLIT: 'SPLIT',
     WITHDRAW: 'WITHDRAW',
     DEPOSIT: 'DEPOSIT',
+    MANUAL_SPLIT: 'MANUAL SPLIT',
     NONE: 'NONE'
   };
 
@@ -54,6 +55,7 @@ const updateCombinedStockTransactionHistorySources = () => {
     SPLIT,
     WITHDRAW,
     DEPOSIT,
+    MANUAL_SPLIT,
     NONE
   } = actions;
 
@@ -94,6 +96,11 @@ const updateCombinedStockTransactionHistorySources = () => {
     }, data);
   }
   
+
+
+  /**************************************************
+   * This is where the magic happens
+   */
   const execUpdate = () => {
 
     let data = readCombinedStockTransactionHistorySources(csthColumns, {actions});
@@ -108,7 +115,7 @@ const updateCombinedStockTransactionHistorySources = () => {
       'csthConsolidateMarketSplits',
       'csthConsolidateDistributedActions',
       'csthApplySensibleRounding',
-      ['calculateTransactionSplits', { filter: item => item[ACTION] !== SPLIT }]
+      ['calculateTransactionSplits', { filter: item => item[ACTION] !== MANUAL_SPLIT }]
     );
 
     /************************************************

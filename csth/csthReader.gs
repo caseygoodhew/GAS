@@ -61,8 +61,6 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
         return acc;
       }, {});
 
-      result[SOURCE_SHEET] = sheetName;
-
       return result;
     });
     
@@ -200,9 +198,15 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
           throw new Error(`Error processing ${sheetName}: Data validation failed for ${key} (${item[key]}) with message "${result}"`);
         }
       });
-    })
+    });
 
-    return data;
+    // add the SOURCE_SHEET to each row
+    return data.map(item => {
+      return {
+        ...item,
+        [SOURCE_SHEET]: sheetName
+      }
+    });
   }
 
   return exec();
