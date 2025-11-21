@@ -8,13 +8,13 @@ const updateCombinedStockTransactionHistorySources = () => {
     'DATE',
     'TAX_YEAR',
     'ACTION',
+    'ACTION_PARAM',
     'SYMBOL',
     'QUANTITY',
     'SHARE_PRICE',
     'FEES',
     'AMOUNT',
     'CURRENCY',
-    'OFFSET_ID'
   ]);
 
   const {
@@ -24,6 +24,7 @@ const updateCombinedStockTransactionHistorySources = () => {
     DATE,
     TAX_YEAR,
     ACTION,
+    ACTION_PARAM,
     SYMBOL,
     QUANTITY,
     SHARE_PRICE,

@@ -9,15 +9,13 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     SOURCE_SHEET,
     EVENT_ID,
     DATE,
-    TAX_YEAR,
     ACTION,
+    ACTION_PARAM,
     SYMBOL,
     QUANTITY,
     SHARE_PRICE,
     FEES,
     AMOUNT,
-    CURRENCY,
-    OFFSET_ID
   } = csthColumns;
 
   if (!isString(QUANTITY)) {
@@ -51,8 +49,8 @@ const calculateTransactionSplits = (csthColumns, constants) => {
     return data;
   }
 
-  const getUnusedByProp = (node, prop) => isEmpty(node[OFFSET_ID]) ? node[prop] : 0;
-  const getUsedbyProp = (node, prop) => isEmpty(node[OFFSET_ID]) ? 0 : node[prop];
+  const getUnusedByProp = (node, prop) => isEmpty(node[ACTION_PARAM]) ? node[prop] : 0;
+  const getUsedbyProp = (node, prop) => isEmpty(node[ACTION_PARAM]) ? 0 : node[prop];
 
   const sumByProp = (items, prop) => {
     return items.reduce((sum, child) => {
@@ -119,8 +117,8 @@ const remainingByProp = (item, prop) => {
     sellNode = getNodeToOffsetByProp(sellItem, prop, value);
     buyNode = getNodeToOffsetByProp(buyItem, prop, value);
 
-    sellNode[OFFSET_ID] = buyNode[EVENT_ID];
-    buyNode[OFFSET_ID] = sellNode[EVENT_ID];
+    sellNode[ACTION_PARAM] = buyNode[EVENT_ID];
+    buyNode[ACTION_PARAM] = sellNode[EVENT_ID];
   }
 
   const getNodeToOffsetByProp = (item, prop, value) => {
@@ -130,7 +128,7 @@ const remainingByProp = (item, prop) => {
       throw new Error(`getNodeToOffset requires that there is available remaining quantity in the node being offset`);
     }
     
-    if (remaining === value && item.children.length === 0) {
+    if (item.children.length === 0 && equalsPlusOrMinus(remaining, value, .0001)) {
       return item.self;
     }
 
@@ -216,7 +214,11 @@ const remainingByProp = (item, prop) => {
       }
 
       return [
-        { ...item.self, [ACTION]: MANUAL_SPLIT },
+        { 
+          ...item.self, 
+          [ACTION]: MANUAL_SPLIT,
+          [ACTION_PARAM]: item.children.length
+        },
         ...item.children
       ]
       

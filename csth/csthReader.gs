@@ -11,13 +11,13 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
     DATE,
     TAX_YEAR,
     ACTION,
+    ACTION_PARAM,
     SYMBOL,
     QUANTITY,
     SHARE_PRICE,
     FEES,
     AMOUNT,
     CURRENCY,
-    OFFSET_ID
   } = csthColumns;
 
   const exec = () => {
@@ -126,7 +126,12 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
      * VALIDATE DATA QUALiTY
      **********************************/
     // Validate that only known columns have been created
-    const excludeKeys = ['SOURCE_SHEET', 'EVENT_ID', 'OFFSET_ID', 'TAX_YEAR'];
+    const excludeKeys = [
+      SOURCE_SHEET, 
+      EVENT_ID,
+      TAX_YEAR,
+      ACTION_PARAM
+    ];
     const expectedKeys = [].concat(csthColumns.keys).filter(key => !excludeKeys.includes(key)).sort().join(', ');
     data.forEach(item => {
       const actualKeys =  Object.keys(item).sort().join(', ');
