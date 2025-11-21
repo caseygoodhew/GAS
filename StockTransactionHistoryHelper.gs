@@ -1,3 +1,13 @@
+function regenerateCombinedStockTransactionHistory() {
+  fillEventIdsForAllRawSheets();
+  execCSTH();
+}
+
+function fillEventIdsForAllRawSheets() {
+  fillEventIdsForTrading212TransactionsRaw();
+  fillEventIdsForCharlesSchwabTransactionsRaw();
+}
+
 function fillEventIdsForTrading212TransactionsRaw() {
   fillEventIds({
     sheetName: 'Trading 212 Transactions Raw',
