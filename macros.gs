@@ -39,8 +39,9 @@ function RAND_STRING(length) {
 }
 
 function FORCE_EXCHANGE_NOW_DATE_REFRESH() {
-   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Exchanges')
-   const range = sheet.getRange(6, 4);
+   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('GLOBALS')
+   const helper = makeHelper(sheet);
+   const range = helper.getRange('G', 6);
 
   range.setValue(new Date());
 }
@@ -48,7 +49,7 @@ function FORCE_EXCHANGE_NOW_DATE_REFRESH() {
 function RESET_DATE_TO_REF_EXCHANGE() {
   const range = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange(2, 5);
 
-  range.setFormula("=Exchanges!D1");
+  range.setFormula("=GLOBALS!$G$5");
 }
 
 function RFIND(search_for, text_to_search, starting_at) {
