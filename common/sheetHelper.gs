@@ -12,6 +12,10 @@ const makeHelper = (sheet, labeledColumnMap) => {
       return sheet;
     },
 
+    getLastRow: () => {
+      return sheet.getLastRow();
+    },
+
     isEmpty: (valueOrCell) => {
       return isEmpty(valueOrCell);
     },

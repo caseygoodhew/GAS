@@ -148,7 +148,7 @@ const toTaxYear = (valueOrCell) => {
 const symbolRatesMap = {};
 // provides memoization
 const readAllRatesForSymbol = (symbol) => {
-  
+  throw new Error('DEPRECATED. MIGRATE TO stockPriceReader')
   if (symbolRatesMap[symbol]) {
     return symbolRatesMap[symbol];
   }
@@ -178,7 +178,7 @@ const readAllRatesForSymbol = (symbol) => {
 // -- assumes that dates are oldest-first-newest-last
 // -- assumes data is fully loaded
 const readRate = (symbol, date) => {
-  
+  throw new Error('DEPRECATED. MIGRATE TO stockPriceReader')
   const values = readAllRatesForSymbol(symbol);
 
   let index = -1;

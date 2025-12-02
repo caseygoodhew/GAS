@@ -33,7 +33,21 @@ const getCombinedStockTransactionHistorySheet = () => {
 
   const funcs = {
     getData: () => {
+      const dataRange = helper.getRange(
+        columns.first,
+        topLeftPosition.row, 
+        columns.last,
+        sheet.getLastRow(),
+      );
 
+      return helper.getRowValues(dataRange).map(row => {
+        const result = columns.keys.reduce((acc, colLabel) => {
+          acc[colLabel] = row[columns.colLabelToNumMap[colLabel] - topLeftPosition.col];
+          return acc;
+        }, {});
+
+        return result;
+      });
     },
     setData: (data) => {
       /************************************************
