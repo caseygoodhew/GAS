@@ -51,5 +51,7 @@ const getGlobalsSheet = () => {
     } 
   }
 
+  memoizedGlobalsSheet = funcs;
+  
   return funcs;
 }

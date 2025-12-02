@@ -1,73 +1,19 @@
 const updateCombinedStockTransactionHistorySources = () => {
 
-  const csthSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Combined Stock Transaction History');
-  const csthColumns = initLabelledColumns(csthSheet, [
-    'SOURCE_ID',
-    'SOURCE_SHEET',
-    'ACCOUNT',
-    'EVENT_ID',
-    'DATE',
-    'TAX_YEAR',
-    'ACTION',
-    'ACTION_PARAM',
-    'SYMBOL',
-    'QUANTITY',
-    'SHARE_PRICE',
-    'FEES',
-    'AMOUNT',
-    'CURRENCY',
-  ]);
+  const csthSheet = getCombinedStockTransactionHistorySheet();
+  const csthColumns = csthSheet.getColumns();
+  const csthConstants = csthSheet.getConstants();
 
   const {
-    SOURCE_ID,
-    SOURCE_SHEET,
-    ACCOUNT,
     EVENT_ID,
     DATE,
     TAX_YEAR,
     ACTION,
-    ACTION_PARAM,
-    SYMBOL,
-    QUANTITY,
-    SHARE_PRICE,
-    FEES,
-    AMOUNT,
-    CURRENCY,
-    OFFSET_ID
   } = csthColumns;
 
-  const actions = {
-    BUY: 'BUY',
-    SELL: 'SELL',
-    AWARD: 'AWARD',
-    DIVIDEND: 'DIVIDEND',
-    TAX: 'TAX',
-    SPLIT: 'SPLIT',
-    WITHDRAW: 'WITHDRAW',
-    DEPOSIT: 'DEPOSIT',
-    MANUAL_SPLIT: 'MANUAL SPLIT',
-    NONE: 'NONE'
-  };
-
   const {
-    BUY,
-    SELL,
-    AWARD,
-    DIVIDEND,
-    TAX,
-    SPLIT,
-    WITHDRAW,
-    DEPOSIT,
     MANUAL_SPLIT,
-    NONE
-  } = actions;
-
-  const accounts = {
-    CHARLES_SCHWAB: 'CHARLES_SCHWAB',
-    TRADING_212: 'TRADING_212'
-  };
-
-  const csthConstants = { actions, accounts };
+  } = csthConstants.actions;
 
   const getFnNameAndConfig = (funcNameAndMaybeConfig) => {
     if (isArray(funcNameAndMaybeConfig)) {
@@ -106,10 +52,6 @@ const updateCombinedStockTransactionHistorySources = () => {
     }, data);
   }
 
-  
-  
-
-
   /**************************************************
    * This is where the magic happens
    */
@@ -130,34 +72,7 @@ const updateCombinedStockTransactionHistorySources = () => {
       ['calculateTransactionSplits', { filter: item => item[ACTION] !== MANUAL_SPLIT }]
     );
 
-    /************************************************
-     * Adjust the data
-     */
-    
-    // converts the data set into a correctly shaped array
-    const values = data.map(item => {
-      return csthColumns.keys.reduce((array, key) => {
-        array[csthColumns.colLabelToNumMap[key] - csthColumns.first] = item[key];
-        return array;
-      }, [])
-    })
-
-    /************************************************
-     * Prep and update the destination sheet
-     */
-    const helper = makeHelper(csthSheet, csthColumns);
-    // TODO: this should come from a magic coordinate
-    const firstDataRow = 3;
-
-    const existingDataRange = (csthSheet.getLastRow() >= firstDataRow) 
-      ? helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, csthSheet.getLastRow()) 
-      : makeMockRange();
-
-    // clear existing data (if any exists)
-    existingDataRange.clearContent();
-    
-    // set the values
-    helper.getRange(csthColumns.first, firstDataRow, csthColumns.last, firstDataRow + values.length - 1).setValues(values);
+    csthSheet.setData(data);
   }
 
   execUpdate();
