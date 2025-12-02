@@ -4,6 +4,7 @@ const updateCombinedStockTransactionHistorySources = () => {
   const csthColumns = initLabelledColumns(csthSheet, [
     'SOURCE_ID',
     'SOURCE_SHEET',
+    'ACCOUNT',
     'EVENT_ID',
     'DATE',
     'TAX_YEAR',
@@ -20,6 +21,7 @@ const updateCombinedStockTransactionHistorySources = () => {
   const {
     SOURCE_ID,
     SOURCE_SHEET,
+    ACCOUNT,
     EVENT_ID,
     DATE,
     TAX_YEAR,
@@ -60,6 +62,13 @@ const updateCombinedStockTransactionHistorySources = () => {
     NONE
   } = actions;
 
+  const accounts = {
+    CHARLES_SCHWAB: 'CHARLES_SCHWAB',
+    TRADING_212: 'TRADING_212'
+  };
+
+  const csthConstants = { actions, accounts };
+
   const getFnNameAndConfig = (funcNameAndMaybeConfig) => {
     if (isArray(funcNameAndMaybeConfig)) {
       return {
@@ -84,18 +93,20 @@ const updateCombinedStockTransactionHistorySources = () => {
 
       const fn = eval(fnName);
       
-      const result = fn(csthColumns, {actions})(
+      const result = fn(csthColumns, csthConstants)(
         // send a copy of the array so that fn is free to mutate values
         input.map(item => ({...item}))
       );
 
       csthValidateTotalsAreEquivalent(
-        csthColumns, {actions}
+        csthColumns, csthConstants
       )(fnName, input, result, config);
       return result;
     
     }, data);
   }
+
+  
   
 
 
@@ -104,7 +115,7 @@ const updateCombinedStockTransactionHistorySources = () => {
    */
   const execUpdate = () => {
 
-    let data = readCombinedStockTransactionHistorySources(csthColumns, {actions});
+    let data = readCombinedStockTransactionHistorySources(csthColumns, csthConstants);
     
     // manual updates common to all data sets
     data.forEach(item => {

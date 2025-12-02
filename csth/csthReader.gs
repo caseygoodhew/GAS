@@ -7,6 +7,7 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
   const {
     SOURCE_ID,
     SOURCE_SHEET,
+    ACCOUNT,
     EVENT_ID,
     DATE,
     TAX_YEAR,
@@ -73,14 +74,15 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
      * RUN PROCESSORS
      **********************************/
     
-    processKeys = Object.keys(process);
+    const processKeys = Object.keys(process);
     data = data.map(item => {
       return processKeys.reduce((result, key) => {
         const config = process[key];
 
         // SOURCE_ID_COL: toKeyCase('EVENT ID'),
+        // ACCOUNT: 'Some Value'
         if (typeof config === 'string') {
-          result[key] = item[config];
+          result[key] = item[config] == null ? config : item[config];
           return result;
         } 
 
@@ -174,16 +176,16 @@ const readCombinedStockTransactionHistorySources = (csthColumns, constants) => {
     }
 
     const dataTypeValidation = {
-      'SOURCE_ID': validators.isString,
-      //'SOURCE_SHEET': validators.isString,
-      'DATE': validators.isDate,
-      'ACTION': validators.isOneOf(Object.values(constants.actions)),
-      'SYMBOL': validators.isString,
-      'QUANTITY': validators.isPositiveNumberOrEmpty,
-      'SHARE_PRICE': validators.isPositiveNumberOrEmpty,
-      'FEES': validators.isPositiveNumberOrEmpty,
-      'AMOUNT': validators.isPositiveNumberOrEmpty,
-      'CURRENCY': validators.isRegex(/^[A-Z][A-Z][A-Z]$/)
+      [SOURCE_ID]: validators.isString,
+      [ACCOUNT]: validators.isOneOf(Object.values(constants.accounts)),
+      [DATE]: validators.isDate,
+      [ACTION]: validators.isOneOf(Object.values(constants.actions)),
+      [SYMBOL]: validators.isString,
+      [QUANTITY]: validators.isPositiveNumberOrEmpty,
+      [SHARE_PRICE]: validators.isPositiveNumberOrEmpty,
+      [FEES]: validators.isPositiveNumberOrEmpty,
+      [AMOUNT]: validators.isPositiveNumberOrEmpty,
+      [CURRENCY]: validators.isRegex(/^[A-Z][A-Z][A-Z]$/)
     };
 
     const devValidationHasAllKeys = Object.keys(dataTypeValidation).sort().join(', ');

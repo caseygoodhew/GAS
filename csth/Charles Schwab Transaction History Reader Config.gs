@@ -30,6 +30,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
 
   const {
     SOURCE_ID,
+    ACCOUNT,
     DATE,
     ACTION,
     SYMBOL,
@@ -54,6 +55,10 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     WITHDRAW,
     NONE,
   } = constants.actions;
+
+  const {
+    CHARLES_SCHWAB
+  } = constants.accounts;
 
   const UNKNOWN = 'UNKNOWN';
   
@@ -97,7 +102,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
       fn: data => {
         return data.map(item => {
           if (item[CS_ACTION] == 'Stock Plan Activity') {
-            const date = item[CS_DATE];
+            const date = new Date(item[CS_DATE]);
             const symbol = item[CS_SYMBOL];
             const quantity = item[CS_QUANTITY];
             
@@ -175,7 +180,8 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
     }],
     process: {
       [SOURCE_ID]: CS_EVENT_ID,
-      [DATE]: CS_DATE, 
+      [ACCOUNT]: CHARLES_SCHWAB,
+      [DATE]: CS_DATE,
       [ACTION]: {
         from: CS_ACTION,
         fn: (action) => {

@@ -213,5 +213,15 @@ const numberWithCommas = (valueOrCell) => {
   return parts.join(".");
 }
 
+const addDays = (valueOrCell, days) => {
+  
+  const date = asValue(valueOrCell);
+  if (!isDate(date)) {
+    throw new Error(`Cannot add a day as (${valueOrCell}) is not a date.`)
+  } 
+  
+  return new Date(date.getTime() + (days * 60 * 60 * 24 * 1000))
+}
+
 
 

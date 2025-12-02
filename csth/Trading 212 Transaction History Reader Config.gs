@@ -54,6 +54,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
 
   const {
     SOURCE_ID,
+    ACCOUNT,
     DATE,
     ACTION,
     SYMBOL,
@@ -76,6 +77,10 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     WITHDRAW,
     TAX,
   } = constants.actions;
+
+  const {
+    TRADING_212
+  } = constants.accounts;
 
   const UNKNOWN = 'UNKNOWN';
   const EMPTY = '';
@@ -200,6 +205,7 @@ function trading212TransactionHistoryReaderConfig(csthColumns, constants) {
     }],
     process: {
       [SOURCE_ID]: T212_EVENT_ID,
+      [ACCOUNT]: TRADING_212,
       [DATE]: T212_TIME, 
       [ACTION]: {
         from: T212_ACTION,

@@ -39,17 +39,15 @@ function RAND_STRING(length) {
 }
 
 function FORCE_EXCHANGE_NOW_DATE_REFRESH() {
-   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('GLOBALS')
-   const helper = makeHelper(sheet);
-   const range = helper.getRange('G', 6);
+  
+  const globalsSheet = getGlobalsSheet();
 
-  range.setValue(new Date());
-}
+  const now = new Date();
+  const curDate = globalsSheet.getTodayRef();
 
-function RESET_DATE_TO_REF_EXCHANGE() {
-  const range = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange(2, 5);
-
-  range.setFormula("=GLOBALS!$G$5");
+  if (!isDate(curDate) || addDays(curDate, 1) < now) {
+    globalsSheet.refreshTodayRef();
+  }
 }
 
 function RFIND(search_for, text_to_search, starting_at) {
@@ -104,4 +102,16 @@ function JOINRANGE(range, joinWith, ignoreEmpty) {
   const toJoin = values.flat().filter(value => !(ignoreEmpty && isEmpty(value)));
 
   return toJoin.join(joinWith ?? '');
+}
+
+function REFRESH_INVESTMENT_OVERVIEW_DATES() {
+  const globalsSheet = getGlobalsSheet();
+  // This is expected to be the Investment Overview sheet, but we don't need to be concrete on the name by using Active Sheet
+  
+  const earliest = globalsSheet.getEarliest();
+  const latest = globalsSheet.getLatest();
+
+  const helper = makeHelper(SpreadsheetApp.getActiveSpreadsheet().getActiveSheet());
+  helper.getRange('F', 6).setValue(earliest);
+  helper.getRange('F', 7).setValue(latest);
 }
