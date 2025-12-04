@@ -1,7 +1,11 @@
 const makeHelper = (sheet, labeledColumnMap) => {
 
   if (typeof sheet === 'string') {
-    sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheet);
+    let sheetName = sheet;
+    sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (sheet == null) {
+      throw new Error(`Could not find a sheet named ${sheetName}`);
+    }
   }
 
   labeledColumnMap = labeledColumnMap ?? {};
@@ -14,6 +18,26 @@ const makeHelper = (sheet, labeledColumnMap) => {
 
     getLastRow: () => {
       return sheet.getLastRow();
+    },
+
+    getLastColumn: () => {
+      return sheet.getLastColumn();
+    },
+
+    getMaxRows: () => {
+      return sheet.getMaxRows();
+    },
+
+    getMaxColumns: () => {
+      return sheet.getMaxColumns();
+    },
+
+    insertRows: (columnIndex, numColumns) => {
+      return sheet.insertRows(columnIndex, numColumns);
+    },
+
+    insertColumns: (columnIndex, numColumns) => {
+      return sheet.insertColumns(columnIndex, numColumns);
     },
 
     isEmpty: (valueOrCell) => {

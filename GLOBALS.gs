@@ -32,6 +32,10 @@ const getGlobalsSheet = () => {
   }
 
   const funcs = {
+    getSheetName: () => {
+      return GLOBALS_SHEET_NAME;
+    },
+
     getEarliest: () => {
       return new Date(earliest);
     },

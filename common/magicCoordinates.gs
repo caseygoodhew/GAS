@@ -42,6 +42,10 @@ const initMagicCoordinates = (() => {
     const targetValues = range.getValues().flat();
 
     targetValues.forEach((value) => {
+      if (!isString(value)) {
+        return;
+      }
+      
       const match = value.match(re);
       if (match) {
         magicCoordinates[match[1]] = {

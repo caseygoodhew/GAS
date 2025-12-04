@@ -31,8 +31,46 @@ const getCombinedStockTransactionHistorySheet = () => {
 
   const [{ topLeftPosition }] = initMagicCoordinates(helper.getRange(1, 1, 1, 100), { topLeftPosition: 'topLeftPosition' });
 
+  let memoizedData = null;
+
   const funcs = {
+    getSymbols: () => {
+      
+      const { SYMBOL } = funcs.getColumns();
+      const data = funcs.getData();
+
+      return Object.keys(data.reduce((acc, item) => {
+        acc[item[SYMBOL]] = true;
+        return acc;
+      }, {})).filter(x => !!x.length).sort();
+    },
+    getHoldingQuantityAsOf: (symbol, date) => {
+      const { DATE, ACTION, SYMBOL, QUANTITY } = funcs.getColumns();
+      const { BUY, SELL, AWARD } = funcs.getConstants().actions;
+      
+      return funcs.getData().reduce((sum, item) => {
+        if (item[SYMBOL] !== symbol || item[DATE] > date || !isNumber(item[QUANTITY])) {
+          return sum;
+        }
+
+        switch (item[ACTION]) {
+          case BUY:
+          case AWARD:
+            return sum + item[QUANTITY];
+          
+          case SELL:
+            return sum - item[QUANTITY];
+
+          default:
+            return sum;
+        }
+      }, 0);
+    },
     getData: () => {
+      if (memoizedData) {
+        return memoizedData;
+      }
+      
       const dataRange = helper.getRange(
         columns.first,
         topLeftPosition.row, 
@@ -40,7 +78,7 @@ const getCombinedStockTransactionHistorySheet = () => {
         sheet.getLastRow(),
       );
 
-      return helper.getRowValues(dataRange).map(row => {
+      const data = dataRange.getValues().map(row => {
         const result = columns.keys.reduce((acc, colLabel) => {
           acc[colLabel] = row[columns.colLabelToNumMap[colLabel] - topLeftPosition.col];
           return acc;
@@ -48,6 +86,9 @@ const getCombinedStockTransactionHistorySheet = () => {
 
         return result;
       });
+
+      memoizedData = data;
+      return data;
     },
     setData: (data) => {
       /************************************************
@@ -75,6 +116,8 @@ const getCombinedStockTransactionHistorySheet = () => {
       
       // set the values (uses a new range)
       helper.getRange(columns.first, topLeftPosition.row, columns.last, topLeftPosition.row + values.length - 1).setValues(values);
+
+      memoizedData = data;
     },
     getColumns: () => {
       return columns;

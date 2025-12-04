@@ -218,10 +218,32 @@ const addDays = (valueOrCell, days) => {
   const date = asValue(valueOrCell);
   if (!isDate(date)) {
     throw new Error(`Cannot add a day as (${valueOrCell}) is not a date.`)
-  } 
-  
-  return new Date(date.getTime() + (days * 60 * 60 * 24 * 1000))
+  }
+
+  return new Date(date.getTime() + (days * 24 * 60 * 60 * 1000))
 }
 
+const getDaysBetweenDates = (date1, date2) => {
+  // Define the number of milliseconds in one day
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+  // 1. Calculate the difference in milliseconds
+  // We use Math.abs() to ensure a positive result regardless of date order
+  const diffInMs = Math.abs(date2.getTime() - date1.getTime());
+
+  // 2. Convert the difference from milliseconds to days
+  const diffInDays = diffInMs / MS_PER_DAY;
+
+  // 3. Round down to the nearest whole number to get the number of full days passed
+  return Math.floor(diffInDays);
+}
+
+const setTime = (valueOrCell, hour = 0, minute = 0, second = 0) => {
+  const date = asValue(valueOrCell);
+  if (!isDate(date)) {
+    throw new Error(`Cannot set time as (${valueOrCell}) is not a date.`)
+  }
+
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second, 0);
+}
 
