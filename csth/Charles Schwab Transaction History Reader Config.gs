@@ -107,7 +107,7 @@ function charlesSchwabTransactionHistoryReaderConfig(csthColumns, constants) {
             const quantity = item[CS_QUANTITY];
             
             date.setDate(date.getDate() - 1);
-            const price = readRate(symbol, date);
+            const price = stockPriceReader.getPriceOn(symbol, date);
 
             item[CS_PRICE] = price;
             item[CS_AMOUNT] = price * quantity;

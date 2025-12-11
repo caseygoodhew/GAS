@@ -6,6 +6,11 @@ const testExchangeRateReader = () => {
   const date2 = setTime(date1, 12);
 
   const result = [
+    exchangeRatesReader().getRateOn('USD', 'USD', date1),
+    exchangeRatesReader().getRateOn('USD', 'USD', date2),
+    exchangeRatesReader().getRateOn('GBP', 'GBP', date1),
+    exchangeRatesReader().getRateOn('GBP', 'GBP', date2),
+    
     exchangeRatesReader().getRateOn('USD', 'GBP', date1),
     exchangeRatesReader().getRateOn('USD', 'GBP', date2),
     exchangeRatesReader().getRateOn('GBP', 'USD', date1),
@@ -13,6 +18,11 @@ const testExchangeRateReader = () => {
   ];
 
   const expectedRates = [
+    1,
+    1,
+    1,
+    1,
+
     0.73952,
     0.74166,
     1.35209,
@@ -76,6 +86,17 @@ const exchangeRatesReader = () => {
     return { USDGBP, GBPUSD };
   }
 
+  const memoisedFastFind = {};
+  const fastFindAsOf = (fromCur, toCur, date) => {
+    const key = makeKey(fromCur, toCur);
+
+    if (!memoisedFastFind[key]) {
+      const history = funcs.getHistoryOf(fromCur, toCur);
+      memoisedFastFind[key] = initFastFind(history, 'ASC');
+    }
+    return memoisedFastFind[key](date);
+  }
+
   const funcs = {
     getHistoryOf: (fromCur, toCur) => {
       const key = makeKey(fromCur, toCur);
@@ -85,6 +106,14 @@ const exchangeRatesReader = () => {
       }
 
       switch (key) {
+        case 'USDUSD':
+        case 'GBPGBP':
+          memoization[key] = [{
+            date: setTime(addDays(getGlobalsSheet().getEarliest(), -1), 12),
+            rate: 1
+          }];
+          break;
+
         case 'USDGBP':
         case 'GDPUSD':
           const result = readUSDGBP();
@@ -95,7 +124,7 @@ const exchangeRatesReader = () => {
           }, memoization);
           
           break;
-
+      
         default:
           throw new Error(`Exchange rate reader not implemented for ${key}`)
       }
@@ -112,20 +141,8 @@ const exchangeRatesReader = () => {
         throw new Error(`Cannot get stock price record for a future date (${date})`);
       }
       
-      const history = funcs.getHistoryOf(fromCur, toCur);
-
-      const result = history.reduce(( closest, item ) => {
-        if (item.date > date) {
-          return closest;
-        }
-
-        if (closest == null || item.date > closest.date) {
-          return item;
-        }
-
-        return closest;
-      }, null);
-
+      const result = fastFindAsOf(fromCur, toCur, date);
+      
       if (result == null) {
         throw new Error(`Cannot get exchange rate record from ${fromCur} to ${toCur} as (${date}) is older than the oldest record`)
       }

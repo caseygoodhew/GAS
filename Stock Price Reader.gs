@@ -1,3 +1,15 @@
+const testStockPriceReader = () => {
+  const date = new Date(2024, 1, 1);
+  const symbol = 'META';
+  const price = stockPriceReader.getPriceOn(symbol, date);
+  const expectedPrice = 390.14;
+  if (price !== expectedPrice) {
+    throw new Error(`Expected price to be ${expectedPrice}, got ${price}`)
+  }
+  
+  console.log(`${symbol} ${price} on ${date}`)  
+}
+
 const initStockPriceReader = (useSnapshot) => {
 
   let memoization = {};
@@ -60,6 +72,15 @@ const initStockPriceReader = (useSnapshot) => {
     return { symbol, currency, data };
   }
 
+  const memoisedFastFind = {};
+  const fastFindAsOf = (symbol, date) => {
+    if (!memoisedFastFind[symbol]) {
+      const history = funcs.getHistoryOf(symbol);
+      memoisedFastFind[symbol] = initFastFind(history.data, 'DESC');
+    }
+    return memoisedFastFind[symbol](date);
+  }
+
   const funcs = {
     getHistoryOfMany: (...symbols) => {
       return symbols.reduce((acc, symbol) => {
@@ -87,29 +108,17 @@ const initStockPriceReader = (useSnapshot) => {
         throw new Error(`Cannot get stock price record for a future date (${date})`);
       }
       
-      const history = funcs.getHistoryOf(symbol);
-
-      const result = history.data.reduce(( closest, item ) => {
-        if (item.date > date) {
-          return closest;
-        }
-
-        if (closest == null || item.date > closest.date) {
-          return item;
-        }
-
-        return closest;
-      }, null);
-
-      if (result == null) {
+      const closest = fastFindAsOf(symbol, date);
+      
+      if (closest == null) {
         throw new Error(`Cannot get stock price record for ${symbol} as (${date}) is older than the oldest record`)
       }
       
       return {
         symbol,
-        date: new Date(result.date),
-        price: result.price,
-        currency: history.currency
+        date: new Date(closest.date),
+        price: closest.price,
+        currency: funcs.getCurrencyOf(symbol)
       }
     },
 

@@ -28,7 +28,17 @@ const stockPriceSnapshotSheet = (() => {
     },
     refresh: () => {
       const helper = makeHelper(STOCK_PRICE_SNAPSHOT_SHEETNMAE);
-      const [{ topLeftPosition }] = initMagicCoordinates(helper.getRange(1, 1, 1, 100), { topLeftPosition: 'topLeftPosition' });      
+      const [{ 
+        topLeftPosition,
+        datestampCell,
+        elapsedTimeCell,
+      }] = initMagicCoordinates(helper.getRange(1, 1, 1, 100), { 
+        topLeftPosition: 'topLeftPosition',
+        lastUpdated: 'datestampCell',
+        executionTime: 'elapsedTimeCell' 
+      });
+
+      const performance = performanceStats({ helper, datestampCell, elapsedTimeCell }).start();
 
       const earliestDate = getGlobalsSheet().getEarliest();
       const latestDate = getGlobalsSheet().getLatest();
@@ -73,6 +83,8 @@ const stockPriceSnapshotSheet = (() => {
       ).setValues(result);
 
       memoised = result;
+
+      performance.stop();
     }
   }
   

@@ -1,3 +1,9 @@
+const testCombinedStockTransactionHistorySheet = () => {
+  const result = getCombinedStockTransactionHistorySheet().getHoldingQuantityAsOf('META', new Date(2025, 8, 11));
+
+  const aaa = 0;
+}
+
 let memoizedCombinedStockTransactionHistorySheet;
 
 const getCombinedStockTransactionHistorySheet = () => {
@@ -32,24 +38,76 @@ const getCombinedStockTransactionHistorySheet = () => {
   const [{ topLeftPosition }] = initMagicCoordinates(helper.getRange(1, 1, 1, 100), { topLeftPosition: 'topLeftPosition' });
 
   let memoizedData = null;
+  const execMemoizeData = (data) => {
+    const { SYMBOL } = funcs.getColumns();
+    
+    const bySymbol = {};
+      
+    data.forEach(item => {
+        if (item[SYMBOL]) {
+          bySymbol[item[SYMBOL]] = bySymbol[item[SYMBOL]] || [];
+          bySymbol[item[SYMBOL]].push(item);
+        }
+    });
+    
+    memoizedData = {
+      ...bySymbol,
+      all: data,
+      symbols: Object.keys(bySymbol).sort()
+    };
+
+    return memoizedData;
+  }
 
   const funcs = {
     getSymbols: () => {
-      
-      const { SYMBOL } = funcs.getColumns();
-      const data = funcs.getData();
-
-      return Object.keys(data.reduce((acc, item) => {
-        acc[item[SYMBOL]] = true;
-        return acc;
-      }, {})).filter(x => !!x.length).sort();
+      return [...funcs.getData().symbols]
     },
+    getAccountSymbolMap: () => {
+      // This fn may not be optimized
+      const {SYMBOL,ACCOUNT} = funcs.getColumns();
+      const data = funcs.getData().all;
+
+      const result = data.reduce((acc, item) => {
+        if (!isString(item[SYMBOL]) || isEmpty(item[SYMBOL])) {
+          return acc;
+        }
+        
+        if (!isString(item[ACCOUNT]) || isEmpty(item[ACCOUNT])) {
+          return acc;
+        }
+
+        acc[item[SYMBOL]] = acc[item[SYMBOL]] || [];
+        acc[item[ACCOUNT]] = acc[item[ACCOUNT]] || [];
+
+        if (!acc[item[SYMBOL]].includes(item[ACCOUNT])) {
+          acc[item[SYMBOL]].push(item[ACCOUNT]);
+        }
+
+        if (!acc[item[ACCOUNT]].includes(item[SYMBOL])) {
+          acc[item[ACCOUNT]].push(item[SYMBOL])
+        }
+
+        return acc;
+      }, {});
+
+      return Object.keys(result).sort().reduce((acc, key) => {
+        acc[key] = result[key].sort();
+        return acc;
+      }, {});
+    },
+    
     getHoldingQuantityAsOf: (symbol, date) => {
-      const { DATE, ACTION, SYMBOL, QUANTITY } = funcs.getColumns();
+      const { DATE, ACTION, QUANTITY } = funcs.getColumns();
       const { BUY, SELL, AWARD } = funcs.getConstants().actions;
+      const data = funcs.getData()
+
+      if (!data.symbols.includes(symbol)) {
+        throw new Error(`Could not find data for symbol ${symbol}`)
+      }
       
-      return funcs.getData().reduce((sum, item) => {
-        if (item[SYMBOL] !== symbol || item[DATE] > date || !isNumber(item[QUANTITY])) {
+      return data[symbol].reduce((sum, item) => {
+        if (item[DATE] > date || !isNumber(item[QUANTITY])) {
           return sum;
         }
 
@@ -87,8 +145,7 @@ const getCombinedStockTransactionHistorySheet = () => {
         return result;
       });
 
-      memoizedData = data;
-      return data;
+      return execMemoizeData(data);
     },
     setData: (data) => {
       /************************************************
@@ -117,7 +174,7 @@ const getCombinedStockTransactionHistorySheet = () => {
       // set the values (uses a new range)
       helper.getRange(columns.first, topLeftPosition.row, columns.last, topLeftPosition.row + values.length - 1).setValues(values);
 
-      memoizedData = data;
+      execMemoizeData(data);
     },
     getColumns: () => {
       return columns;

@@ -142,7 +142,13 @@ const toTaxYear = (valueOrCell) => {
     year--;
   }
 
-  return `${year}/${year+1}`;
+  let suffix = '';
+  // CGT is split in the 24/25 tax year with an increase after Oct 29
+  if (year === 24) {
+    suffix = value < new Date(2024, 9, 30) ? '-1' : '-2';
+  }
+
+  return `${year}/${year+1}${suffix}`;
 }
 
 const symbolRatesMap = {};
@@ -245,5 +251,54 @@ const setTime = (valueOrCell, hour = 0, minute = 0, second = 0) => {
   }
 
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second, 0);
+}
+
+const initFastFind = (data, sortDir) => {
+  if (!['ASC', 'DESC'].includes(sortDir)) {
+    throw new Error(`sortDir must be either ASC or DESC (got ${sortDir})`);
+  }
+
+  if (!isArray(data)) {
+    throw new Error(`Expected data to be an array`);
+  }
+
+  const exec = (date) => {
+    if (data.length === 0) {
+      return null;
+    }
+    
+    // this assumes that the history is sorted most recent (index 0) to oldest (end)
+    let smallest = 0
+    let largest = data.length - 1;
+    
+    if (data.length > 100) {
+      for (let x = 0; x < 8; x++) {
+        let mid = Math.floor((largest - smallest) / 2) + smallest;
+        
+        if (sortDir === 'DESC' && data[mid].date < date) {
+          largest = Math.min(data.length - 1, mid + 1);
+        } else if (sortDir === 'ASC' && data[mid].date > date) {
+          largest = Math.min(data.length - 1, mid + 1);
+        } else {
+          smallest = Math.max(0, mid - 1);
+        }
+      }
+    }
+    
+    let closest = null
+    for (let i = smallest; i <= largest; i++) {
+      if (data[i].date > date) {
+        continue;
+      }
+
+      if (closest == null || data[i].date > closest.date) {
+        closest = data[i];
+      }
+    }
+
+    return closest;
+  }
+
+  return exec;
 }
 
