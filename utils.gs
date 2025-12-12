@@ -262,26 +262,30 @@ const initFastFind = (data, sortDir) => {
     throw new Error(`Expected data to be an array`);
   }
 
+  data.forEach((item, index) => {
+    if (!isDate(item.date)) {
+      throw new Error(`Expected each item in the dataset to contain a property named "date" that always contains a valid date (Err at index ${index})`);
+    }
+  })
+
   const exec = (date) => {
     if (data.length === 0) {
       return null;
     }
-    
+
     // this assumes that the history is sorted most recent (index 0) to oldest (end)
     let smallest = 0
     let largest = data.length - 1;
     
-    if (data.length > 100) {
-      for (let x = 0; x < 8; x++) {
-        let mid = Math.floor((largest - smallest) / 2) + smallest;
-        
-        if (sortDir === 'DESC' && data[mid].date < date) {
-          largest = Math.min(data.length - 1, mid + 1);
-        } else if (sortDir === 'ASC' && data[mid].date > date) {
-          largest = Math.min(data.length - 1, mid + 1);
-        } else {
-          smallest = Math.max(0, mid - 1);
-        }
+    while (largest - smallest > 10) {
+      let mid = Math.floor((largest - smallest) / 2) + smallest;
+      
+      if (sortDir === 'DESC' && data[mid].date < date) {
+        largest = Math.min(data.length - 1, mid + 1);
+      } else if (sortDir === 'ASC' && data[mid].date > date) {
+        largest = Math.min(data.length - 1, mid + 1);
+      } else {
+        smallest = Math.max(0, mid - 1);
       }
     }
     
