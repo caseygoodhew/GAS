@@ -1,7 +1,7 @@
 const testStockPriceReader = () => {
   const date = new Date(2024, 1, 1);
   const symbol = 'META';
-  const price = stockPriceReader.getPriceOn(symbol, date);
+  const price = stockPriceSnapshotBuilder.getPriceOn(symbol, date);
   const expectedPrice = 390.14;
   if (price !== expectedPrice) {
     throw new Error(`Expected price to be ${expectedPrice}, got ${price}`)
@@ -13,6 +13,7 @@ const testStockPriceReader = () => {
 const initStockPriceReader = (useSnapshot) => {
 
   let memoization = {};
+  const DATE_SORTING = useSnapshot ? 'DESC' : 'ASC';
 
   const getHistoryFROMSnapshot = (symbol) => {
     const rawData = stockPriceSnapshotSheet.getData();
@@ -76,7 +77,7 @@ const initStockPriceReader = (useSnapshot) => {
   const fastFindAsOf = (symbol, date) => {
     if (!memoisedFastFind[symbol]) {
       const history = funcs.getHistoryOf(symbol);
-      memoisedFastFind[symbol] = initFastFind(history.data, 'DESC');
+      memoisedFastFind[symbol] = initFastFind(history.data, DATE_SORTING);
     }
     return memoisedFastFind[symbol](date);
   }
@@ -111,6 +112,7 @@ const initStockPriceReader = (useSnapshot) => {
       const closest = fastFindAsOf(symbol, date);
       
       if (closest == null) {
+        const aaa = fastFindAsOf(symbol, date);
         throw new Error(`Cannot get stock price record for ${symbol} as (${date}) is older than the oldest record`)
       }
       

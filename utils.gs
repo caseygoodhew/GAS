@@ -8,6 +8,66 @@ const isRange = (range) => {
     && typeof range.getCell === 'function';
 }
 
+const a1ToArray = (a1) => {
+  if (!isString(a1)) {
+    throw new Error(`Expected a1 to be a string, got (${a1})`)
+  }
+  
+  const split = a1.split(':');
+  if (split.length > 1) {
+    if (split.length !== 2) {
+      throw new Error(`Expected that if a1 had a colon (:), only one colon would be present. Got ${split.length}`);
+    }
+
+    return [...a1ToArray(split[0]), ...a1ToArray(split[1])];
+  }
+
+  const re = /([a-z]+)([0-9]+)/i;
+
+  if (!re.test(a1)) {
+    throw new Error(`a1 does not appear to be a valid annotation (${a1})`);
+  }
+
+  const matches = a1.match(re);
+  return [toColNumber(matches[1]), parseInt(matches[2], 10)];
+}
+
+const rangeArrayIncludes = (array, col, row) => {
+  if (!isArray(array)) {
+    throw new Error(`Expected array to be an ... arrray`);
+  }
+
+  if (!isNumber(array[0]) || !isNumber(array[1])) {
+    throw new Error(`Expected array to only contain numbers`)
+  }
+  
+  if (array.length > 2 && (!isNumber(array[2]) || !isNumber(array[3]))) {
+    throw new Error(`Expected array to only contain numbers`)
+  }
+
+  if (!(isNumber(col) || isString(col))) {
+    throw new Error(`Expected col to be a col letter or col number, got (${col})`);
+  }
+
+  if (!isNumber(row)) {
+    throw new Error(`Expected row to be a number, got (${row})`);
+  }
+
+  const colNum = toColNumber(col);
+
+  switch (array.length) {
+    case 2:
+      return array[0] === colNum && array[1] === row;
+
+    case 4: 
+      return array[0] <= colNum && array[1] <= row && array[2] >= colNum && array[3] >= row;
+
+    default:
+      throw new Error(`Expected array to have either 2 or 4 elements, actually has ${array.length} elements. (${array.join(", ")}) `)
+  }
+  
+}
+
 const toColLetter = (colNum) => {
   const minColNum = 1;
   const maxColNum = 18278;
@@ -28,6 +88,30 @@ const toColLetter = (colNum) => {
   
   return columnLetter;
 }
+
+const toColNumber = (colLetter) => {
+  if (isNumber(colLetter)) {
+    return colLetter
+  }
+
+  if (!isString(colLetter)) {
+    throw new Error(`Expected colLetter to be a string, got (${colLetter})`);
+  }
+
+  if (!/[A-Z]+/i.test(colLetter)) {
+    throw new Error(`Expected colLetter to be a column letter only, got (${colLetter})`);
+  }
+  
+  const column = colLetter.toUpperCase(); 
+  let number = 0;
+
+  for (let i = 0; i < column.length; i++) {
+    const charCode = column.charCodeAt(i) - 64; 
+    number = number * 26 + charCode;
+  }
+
+  return number;
+};
 
 const toA1Notation = (colNumOrLetter, rowNum) => {
   const colLetter = typeof colNumOrLetter === 'string' ? colNumOrLetter : toColLetter(colNumOrLetter);
@@ -229,6 +313,22 @@ const addDays = (valueOrCell, days) => {
   return new Date(date.getTime() + (days * 24 * 60 * 60 * 1000))
 }
 
+const addMonths = (valueOrCell, months) => {
+  
+  const date = asValue(valueOrCell);
+  if (!isDate(date)) {
+    throw new Error(`Cannot add a month as (${valueOrCell}) is not a date.`)
+  }
+  
+  const newDate = new Date(date.getTime());
+  
+  const currentMonth = newDate.getMonth();
+  
+  newDate.setMonth(currentMonth + months);
+  
+  return newDate;
+};
+
 const getDaysBetweenDates = (date1, date2) => {
   // Define the number of milliseconds in one day
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -304,5 +404,81 @@ const initFastFind = (data, sortDir) => {
   }
 
   return exec;
+}
+
+const pivotArray = (array) => {
+  if (!isArray(array)) {
+    throw new Error(`Expected an array, got your trash`);
+  }
+
+  if (!isArray(array[0])) {
+    throw new Error(`Expected an array or arrays, got a monstrosity`);
+  }
+
+  // 1. Get the number of columns (length of the first row)
+  const numColumns = array[0].length;
+
+  // 2. Use Array.from() to iterate over the column indices (0, 1, 2...)
+  return Array.from({ length: numColumns }, (_, colIndex) => {
+      // 3. For each column index, use map() to create a new row
+      //    by pulling the element at that column index from every original row.
+      return array.map(row => row[colIndex]);
+  });
+}
+
+const lightenHexColor = (hex, percent) => {
+    if (!isString(hex)) {
+      throw new Error(`Expected hex to be a valid hexidecimal color code, got (${hex})`)
+    }
+
+    if (!isNumber(percent)) {
+      throw new Error(`Expected percent to be a number, got (${percent})`)
+    }
+    
+    // 1. Validate and clean up the hex string
+    let str = hex.replace('#', '');
+    if (str.length === 3) { // Expand 3-digit shorthand (e.g., #ABC -> #AABBCC)
+        str = str[0] + str[0] + str[1] + str[1] + str[2] + str[2];
+    }
+    
+    // Ensure it's a valid 6-character hex string (ignore alpha channel if present)
+    const hexRegex = /^[0-9A-F]{6}$/i;
+    if (!hexRegex.test(str)) {
+        throw new Error('Invalid hex color format: ' + str);
+    }
+    
+    // The amount to change each channel, converted to a factor (e.g., 20% -> 0.2)
+    const factor = percent < 1 ? percent : percent / 100;
+    
+    let R = parseInt(str.substring(0, 2), 16);
+    let G = parseInt(str.substring(2, 4), 16);
+    let B = parseInt(str.substring(4, 6), 16);
+    
+    // 2. Lighten and clamp each RGB component
+    
+    // To 'lighten' by factor 'p', we move R, G, B closer to 255 (white).
+    // New R = R + (255 - R) * factor
+    // This formula ensures that if R is already 255, the new R is also 255 (it clamps itself).
+    R = Math.min(255, Math.round(R + (255 - R) * factor));
+    G = Math.min(255, Math.round(G + (255 - G) * factor));
+    B = Math.min(255, Math.round(B + (255 - B) * factor));
+
+    // 3. Convert back to hex and format
+    
+    // Helper function to convert a decimal number to a 2-digit hex string
+    const toHex = (c) => {
+        const h = c.toString(16);
+        return h.length === 1 ? '0' + h : h;
+    };
+
+    return '#' + toHex(R) + toHex(G) + toHex(B);
+}
+
+const colorArray = (startHex, dimBy, size) => {
+  const colors = [startHex];
+  for (let i = 1; i < size; i++) {
+    colors.push(lightenHexColor(startHex, dimBy * i));
+  }
+  return colors;
 }
 

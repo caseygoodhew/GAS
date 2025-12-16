@@ -50,7 +50,7 @@ const exchangeRatesReader = () => {
   
   let memoization = {};
 
-  const makeKey = (fromCur, toCur) => `${fromCur}${toCur}`;
+  const makeKey = (fromCur, toCur, date) => `${fromCur}${toCur}${date ?? ''}`;
 
   const readUSDGBP = () => {
     const SHEET_NAME = 'USDGBP';
@@ -132,8 +132,12 @@ const exchangeRatesReader = () => {
       return memoization[key];
     },
 
-    getRateOn: (romCur, toCur, date) => {
-      return funcs.getRecordOn(romCur, toCur, date).rate;
+    getRateOn: (fromCur, toCur, date) => {
+      const key = makeKey(fromCur, toCur, date);
+      if (!memoization[key]) {
+        memoization[key] = funcs.getRecordOn(fromCur, toCur, date).rate;
+      }
+      return memoization[key];
     },
 
     getRecordOn: (fromCur, toCur, date) => {

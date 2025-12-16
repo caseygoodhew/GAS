@@ -1,0 +1,36 @@
+<script>
+
+  window.addEventListener('load', function() {
+    //alert('Page is loaded');
+  });
+
+  const onSubmit = () => {
+    console.log(Object.keys(google.script.run));
+    
+    remoteCall({
+      handler: api => api.submitIOCSetupDialogData(41), 
+      success: onSubmitSuccess,
+      failure: onScriptRunFailure,
+      verb: 'submitting the form'
+    })
+/*
+    const options = { method: 'onSubmit', verb: 'submitting the form' };
+    try {
+      google.script.run
+        .withSuccessHandler(onSubmitSuccess)
+        .withFailureHandler(onScriptRunFailure)
+        .withUserObject({ method: 'onSubmit', verb: 'submitting the form' })
+        .submitIOCSetupDialogData(41);
+    } catch (e) {
+      onScriptRunFailure(e, options)
+    }*/
+  }
+
+  const onSubmitSuccess = (value) => {
+    google.script.host.close();
+  }
+
+  const onScriptRunFailure = (error, options) => {
+    alert(`Error while ${options.verb}:\n\n${error}`)
+  }
+</script>
