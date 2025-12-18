@@ -1,0 +1,172 @@
+<script>
+
+/**
+ * Make a remote call handling failures and exceptions
+ * 
+ * const options = {
+ *   handler: (api) => api.myServerMethod,
+ *   success: (result, options) => { },
+ *   userError: (payload, options) => { }, // gracefully handle UserError throws
+ *   failure: (error, options) => { },
+ *   failure: 'This is my error message for a simple alert box',
+ *   custom: 'Any custom properties that will also be passed to the success & failure handlers'
+ * };
+ * 
+ * remoteCall(options);
+ */
+const remoteCall = (options) => {
+  
+  const {handler, success, userError, failure, spinner} = options;
+
+  let api = google.script.run.withUserObject(options);
+
+  const userErrorInterceptor = (fn) => {
+    return (error, options) => {
+      // "UserError: {"payload":"ooooo noooo!"}"
+      const re = /^UserError\: (.*)/
+      if (re.test(error.message)) {
+        const matches = error.message.match(re);
+        const {payload} = JSON.parse(matches[1]);
+        userError(payload, options)
+      } else {
+        fn(error, options);
+      }
+    }
+  }
+
+  const finallyWrapper = (fn) => {
+    return (...args) => {
+      fn(...args);
+
+      if (spinner) {
+        hideSpinner();
+      }
+    }
+  }
+
+  if (success) {
+    api = api.withSuccessHandler(finallyWrapper(success));
+  }
+
+  if (failure || userError) {
+    let fn = () => {};
+    
+    if (typeof failure === 'string') {
+      fn = commonFailureHandler;
+    } else if (failure) {
+      fn = failure;
+    }
+
+    if (userError) {
+      fn = userErrorInterceptor(fn);
+    }
+
+    api = api.withFailureHandler(finallyWrapper(fn));
+  }
+
+  try {
+    if (spinner) {
+      showSpinner(spinner === true ? undefined : spinner);
+    }
+    handler(api);
+  } catch (e) {
+    if (failure) {
+      failure(e, options);
+    } else {
+      throw e;
+    }
+  }  
+};
+
+const commonFailureHandler = (error, options) => {
+  showError(options.failure, error);
+}
+
+const showError = (msg, error) => {
+  showAlert(msg, error.message);
+  console.error(`${msg}\n${error.toString()}\n${error.stack}`);
+}
+
+/**
+ * Deeply compares two values for equality.
+ * Short-circuits as soon as a mismatch is found.
+ */
+const isEqual = (a, b) => {
+  // 1. Strict equality for primitives and same-reference objects
+  if (a === b) return true;
+
+  // 2. Handle null/undefined or type mismatches
+  if (a == null || b == null || typeof a !== typeof b) return false;
+
+  // 3. Handle Arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    // .every() short-circuits on the first 'false' return
+    return a.every((val, index) => isEqual(val, b[index]));
+  }
+
+  // 4. Handle Objects
+  if (typeof a === 'object') {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) return false;
+
+    // Check every key recursively
+    return keysA.every(key => 
+      Object.prototype.hasOwnProperty.call(b, key) && isEqual(a[key], b[key])
+    );
+  }
+
+  // 5. Fallback for primitives that failed the strict check (like NaN)
+  return false;
+};
+
+console.logJSON = obj => {
+  console.log(JSON.stringify(obj, undefined, 2));
+}
+
+/**
+ * Displays a custom alert box
+ * @param {string} title - The header text
+ * @param {string} message - The body text
+ */
+const showAlert = (title, message) => {
+  const modal = document.getElementById('customAlert');
+  
+  if (!modal) {
+    // if the modal hasn't been added, fall back to the standard alert box
+    console.warn('Alert modal not found. You need to include html/alert as the last element of the body');
+    alert(`${title}\n\n${message}`);
+    return;
+  }
+  
+  document.getElementById('alertTitle').innerText = title;
+  document.getElementById('alertMessage').innerText = message;
+  modal.classList.remove('hidden');
+};
+
+/**
+ * Closes the custom alert box
+ */
+const closeAlert = () => {
+  document.getElementById('customAlert').classList.add('hidden');
+};
+
+/**
+ * Shows the classic spinner
+ * @param {string} msg - The text to display under the spinner
+ */
+const showSpinner = (msg = 'Loading...') => {
+  document.getElementById('loaderText').innerText = msg;
+  document.getElementById('spinnerModal').classList.remove('hidden');
+};
+
+/**
+ * Hides the spinner
+ */
+const hideSpinner = () => {
+  document.getElementById('spinnerModal').classList.add('hidden');
+};
+
+</script>

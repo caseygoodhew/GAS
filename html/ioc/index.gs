@@ -1,13 +1,17 @@
-const showIOCSetupDialog = () => {
-  const fileName = 'html/ioc/setupDialog';
-  SpreadsheetApp.getUi().showModalDialog(
-    //HtmlService.createHtmlOutputFromFile(fileName), 
-    HtmlService.createTemplateFromFile(fileName).evaluate(),
-    'Dialog title'
-  );
+const showIOCChartConfigurationSidebar = () => {
+  const html = HtmlService.createTemplateFromFile('html/ioc/sidebar')
+    .evaluate()
+    .setTitle('Chart Configuration')
+    .setWidth(300); // Note: Sidebars have a fixed width of 300px
+  
+  SpreadsheetApp.getUi().showSidebar(html);
+};
+
+const getIOCCurrentConfiguration = () => {
+  return investmentOverviewChartsSheet().getConfiguration();
 }
 
-const submitIOCSetupDialogData = (num) => {
-  //throw new Error('aaa')
-  return num + 1;
+const setIOCCurrentConfiguration = data => {
+  investmentOverviewChartsSheet().setConfiguration(data);
 }
+

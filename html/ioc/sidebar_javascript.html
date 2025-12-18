@@ -1,0 +1,179 @@
+<script>
+
+let lastStoredData = {};
+
+window.addEventListener('load', function() {
+  [1, 2, 3, 4].forEach(secNum => {
+    const initialValue = document.getElementById(`dateRangeMode${secNum}`).value;
+    handleDateRangeModeChange(secNum, initialValue);
+  })
+
+  remoteCall({
+    handler: api => api.getIOCCurrentConfiguration(),
+    success: loadData,
+    failure: 'Error getting current configuration',
+    spinner: 'Getting configuration'
+  });
+
+  addChangeListeners();
+});
+
+const addChangeListeners = () => {
+  // Select all inputs and selects inside the setup container
+  const fields = document.querySelectorAll('#setup input, #setup select');
+
+  fields.forEach(field => {
+    field.addEventListener('change', () => {
+      setActionsEnabled(!isEqual(getData(), lastStoredData));
+    });
+  });
+};
+
+const openTab = (evt, tabName) => {
+  const contents = document.getElementsByClassName("tab-content");
+  for (let i = 0; i < contents.length; i++) {
+    contents[i].classList.remove("active");
+  }
+  
+  const tabs = document.getElementsByClassName("tab");
+  for (let i = 0; i < tabs.length; i++) {
+    tabs[i].classList.remove("active");
+  }
+
+  document.getElementById(tabName).classList.add("active");
+  evt.currentTarget.classList.add("active");
+};
+
+const toggleSection = (id) => {
+  const element = document.getElementById(id);
+  element.classList.toggle("expanded");
+};
+
+const handleDateRangeModeChange = (secNum, value) => {
+  const startCont = document.getElementById(`startDateContainer${secNum}`);
+  const endCont = document.getElementById(`endDateContainer${secNum}`);
+  const dateSameAsCont = document.getElementById(`dateSameAsContainer${secNum}`);
+  const datePeriodCont = document.getElementById(`datePeriodContainer${secNum}`);
+  const taxYearCont = document.getElementById(`taxYearContainer${secNum}`);
+
+  // Reset visibility
+  startCont.classList.add('hidden');
+  endCont.classList.add('hidden');
+  dateSameAsCont.classList.add('hidden');
+  datePeriodCont.classList.add('hidden');
+  taxYearCont.classList.add('hidden');
+
+  switch (value) {
+    case 'current':
+      datePeriodCont.classList.remove('hidden');
+      break;
+    case 'fixed-start':
+      startCont.classList.remove('hidden');
+      datePeriodCont.classList.remove('hidden');
+      break;
+    case 'fixed-end':
+      endCont.classList.remove('hidden');
+      datePeriodCont.classList.remove('hidden');
+      break;
+    case 'tax-year':
+      taxYearCont.classList.remove('hidden');
+      break;
+      
+    case 'same-as':
+      dateSameAsCont.classList.remove('hidden');
+      break;
+    case 'custom':
+      startCont.classList.remove('hidden');
+      endCont.classList.remove('hidden');
+      break;
+  }
+};
+
+/**
+ * Enables or disables the action buttons
+ * @param {boolean} enabled - True to enable, false to disable
+ */
+const setActionsEnabled = (enabled) => {
+  const saveBtn = document.getElementById('saveBtn');
+  const discardBtn = document.getElementById('discardBtn');
+  
+  saveBtn.disabled = !enabled;
+  discardBtn.disabled = !enabled;
+};
+
+const handleSave = () => {
+  
+  const data = getData();
+
+  remoteCall({
+    handler: api => api.setIOCCurrentConfiguration(data),
+    spinner: 'Saving configuration',
+    success: () => {
+      lastStoredData = data;
+      setActionsEnabled(false);
+    },
+    userError: (payload) => {
+      debugger;
+    },
+    failure: `Error saving current configuration`
+  });
+  
+};
+
+const handleDiscard = () => {
+  loadData(lastStoredData);
+  setActionsEnabled(false);
+};
+
+const getFields = () => {
+  return {
+    'dateRangeMode': {
+      onLoad: (secNum, value) => {
+        handleDateRangeModeChange(secNum, value);
+      }
+    },
+    'startDate': {},
+    'endDate': {},
+    'startDateOffsetPeriod': {},
+    'taxYear': {},
+    'dateSameAs': {},
+  };
+}
+
+const loadData = (data) => {
+  const fields = getFields();
+  const fieldNames = Object.keys(fields);
+
+  for (let i = 1; i <= 4; i++) {
+    fieldNames.forEach(name => {
+      const field = document.getElementById(`${name}${i}`);
+      field.value = data[i-1][name];
+
+      if (fields[name].onLoad) {
+        fields[name].onLoad(i, field.value);
+      }
+    });  
+  }
+
+
+
+  lastStoredData = data;
+};
+
+const getData = () => {
+  const fields = getFields();
+  const fieldNames = Object.keys(fields);
+  const data = [];
+
+  for (let i = 1; i <= 4; i++) {
+    data.push(fieldNames.reduce((item, name) => {
+      const field = document.getElementById(`${name}${i}`);
+      item[name] = field.value;
+      return item;
+    }, {}));  
+  }
+
+  return data;
+}
+
+</script>

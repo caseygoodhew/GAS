@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= include('html/ioc/sidebar_stylesheet'); ?>
+  </head>
+  <body>
+
+    <div class="tabs">
+      <div class="tab active" onclick="openTab(event, 'setup')">Setup</div>
+      <div class="tab" onclick="openTab(event, 'presets')">Presets</div>
+    </div>
+
+    <div class="main-container">
+      <div id="setup" class="tab-content active">
+        <div class="action-bar">
+          <button id="saveBtn" class="btn btn-save" disabled onclick="handleSave()">Done</button>
+          <button id="discardBtn" class="btn btn-discard" disabled onclick="handleDiscard()">Cancel</button>
+        </div>
+        <? 
+          [1, 2, 3, 4]
+            .forEach((sectionNum) => { 
+        ?>
+          <div class="accordion section-<?= sectionNum ?>" id="sec<?= sectionNum ?>">
+            <div class="accordion-header" onclick="toggleSection('sec<?= sectionNum ?>')">
+              <p>Chart <?= sectionNum ?></p>
+              <i class="arrow"></i>
+            </div>
+            <div class="accordion-content">
+              <div class="control-group">
+                <label class="control-label">Date Range</label>
+                <select id="dateRangeMode<?= sectionNum ?>" class="control-input" onchange="handleDateRangeModeChange(<?= sectionNum ?>, this.value)">
+                  <option value="current">Current</option>
+                  <option value="fixed-start">Fixed Start Date</option>
+                  <option value="fixed-end">Fixed End Date</option>
+                  <option value="tax-year">Tax Year</option>
+                  <option value="same-as">Same as Chart</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div id="startDateContainer<?= sectionNum ?>" class="control-group hidden">
+                <label class="control-label">Start Date</label>
+                <input type="date" id="startDate<?= sectionNum ?>" class="control-input">
+              </div>
+
+              <div id="endDateContainer<?= sectionNum ?>" class="control-group hidden">
+                <label class="control-label">End Date</label>
+                <input type="date" id="endDate<?= sectionNum ?>" class="control-input">
+              </div>
+
+              <div id="datePeriodContainer<?= sectionNum ?>" class="control-group hidden">
+                <label class="control-label">Period</label>
+                <select id="startDateOffsetPeriod<?= sectionNum ?>" class="control-input">
+                  <option value="1-week">1 Week</option>
+                  <option value="2-weeks">2 Weeks</option>
+                  <option value="1-month">1 Month</option>
+                  <option value="3-months">3 Months</option>
+                  <option value="6-months">6 Months</option>
+                  <option value="1-year">1 Year</option>
+                  <option value="2-years">2 Years</option>
+                  <option value="3-years">3 Years</option>
+                </select>
+              </div>
+
+              <div id="taxYearContainer<?= sectionNum ?>" class="control-group hidden">
+                <label class="control-label">Tax Year</label>
+                <select id="taxYear<?= sectionNum ?>" class="control-input">
+                  <? 
+                    const getYearRange = () => {
+                      const startYear = 2022;
+                      const currentYear = new Date().getFullYear();
+                      const years = [];
+
+                      for (let year = currentYear; year >= startYear; year--) {
+                        years.push(year);
+                      }
+
+                      return years;
+                    }
+
+                    [2022].map((startYear) => {
+                      const today = new Date();
+                      const currentYear = today.getFullYear();
+                      const taxYearStart = new Date(currentYear, 3, 6);
+                      const fromYear = (today < taxYearStart) ? currentYear - 1 : currentYear;
+                      const years = [];
+
+                      for (let year = fromYear; year >= startYear; year--) {
+                        years.push(year);
+                      }
+
+                      return years;
+                    })
+                    .flat()
+                    .map(year => `${year-2001}/${year-2000}`)
+                    .forEach(taxYear => {
+                  ?>
+                    <option value="<?= taxYear ?>"><?= taxYear ?></option>
+                  <? }); ?>
+                </select>
+              </div>
+
+              <div id="dateSameAsContainer<?= sectionNum ?>" class="control-group hidden">
+                <label class="control-label">Same as</label>
+                <select id="dateSameAs<?= sectionNum ?>" class="control-input">
+                  <? 
+                    [1, 2, 3, 4]
+                      .forEach((optionNum) => { 
+                        if (optionNum !== sectionNum) {
+                  ?>
+                  <option value="chart<?= optionNum ?>">Chart <?= optionNum ?></option>
+                  <? }
+                  }); ?>
+                </select>
+              </div>
+            </div>
+          </div>
+        <? }); ?>
+        <div class="tab-footer">&nbsp;</div>
+      </div>
+
+      <div id="presets" class="tab-content">
+        Hello World!
+      </div>
+    </div>
+    <?!= includeCommon(); ?>
+    <?!= include('html/ioc/sidebar_javascript'); ?>
+  </body>
+</html>

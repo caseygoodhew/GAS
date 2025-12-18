@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?!= include('html/bootstrap_stylesheet'); ?>
+    <?!= include('html/ioc/dialog_stylesheet'); ?>
+  </head>
+  <body>
+    <div class="container-fluid vh-100 d-flex flex-column p-3">
+      <main class="flex-grow-1">
+        
+          <div class="container-fluid h-100 d-flex flex-column overflow-hidden">
+            <div class="row g-0 align-items-stretch flex-grow-1">
+              
+              <div class="col-1 h-100" style="border-color: #dee2e6 !important;">
+                <button id="prevBtn" class="btn v-stretch-btn w-100 h-100 nav-hidden" onclick="moveCarousel('prev')">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+              </div>
+
+              <div class="col-10 h-100">
+                <div id="carouselStage" class="h-100" style="overflow: hidden; white-space: nowrap;">
+                  <div id="carouselTrack" class="d-flex h-100" style="transition: transform 0.5s ease; width: 200%;">
+                    
+                    <div class="carousel-item-custom h-100" style="width: 25%; flex: 0 0 25%; padding: 10px;">
+                      <div class="card card-body text-center h-100">Item 1</div>
+                    </div>
+                    
+                    <div class="carousel-item-custom h-100" style="width: 25%; flex: 0 0 25%; padding: 10px;">
+                      <div class="card card-body text-center h-100">Item 2</div>
+                    </div>
+
+                    <div class="carousel-item-custom h-100" style="width: 25%; flex: 0 0 25%; padding: 10px;">
+                      <div class="card card-body text-center h-100">Item 3</div>
+                    </div>
+
+                    <div class="carousel-item-custom h-100" style="width: 25%; flex: 0 0 25%; padding: 10px;">
+                      <div class="card card-body text-center h-100">Item 4</div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-1 h-100" style="border-color: #dee2e6 !important;">
+                <button id="nextBtn" class="btn v-stretch-btn w-100 h-100" onclick="moveCarousel('next')">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+
+
+      </main>
+      <footer class="mt-auto pt-3">
+        <div class="d-flex justify-content-end">
+          <button onclick="onSubmit()" type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </footer>
+    </div>
+  <!--script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script-->
+    <?!= includeCommon(); ?>
+    <?!= include('html/ioc/dialog_javascript'); ?>
+  </body>
+</html>

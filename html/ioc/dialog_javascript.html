@@ -1,0 +1,50 @@
+<script>
+
+  window.addEventListener('load', function() {
+    //alert('Page is loaded');
+  });
+
+  const onSubmit = () => {
+    console.log(Object.keys(google.script.run));
+    
+    remoteCall({
+      handler: api => api.submitIOCSetupDialogData(41), 
+      success: onSubmitSuccess,
+      failure: onScriptRunFailure,
+      verb: 'submitting the form'
+    });
+  }
+
+  const onSubmitSuccess = (value) => {
+    google.script.host.close();
+  }
+
+  const onScriptRunFailure = (error, options) => {
+    alert(`Error while ${options.verb}:\n\n${error}`)
+  }
+
+  let currentIndex = 0;
+
+  const moveCarousel = (direction) => {
+    const track = document.getElementById('carouselTrack');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    const totalItems = 4;
+    const visibleItems = 2;
+    const maxIndex = totalItems - visibleItems;
+
+    if (direction === 'next' && currentIndex < maxIndex) {
+      currentIndex++;
+    } else if (direction === 'prev' && currentIndex > 0) {
+      currentIndex--;
+    }
+
+    // Each move is 25% because there are 4 items in a 200% width track
+    const percentageShift = currentIndex * 25;
+    track.style.transform = `translateX(-${percentageShift}%)`;
+
+    prevBtn.classList.toggle('nav-hidden', currentIndex === 0);
+    nextBtn.classList.toggle('nav-hidden', currentIndex === maxIndex);
+  };
+</script>

@@ -1,0 +1,272 @@
+<style>
+:root {
+  /* Google Blue Palette */
+  --blue-base: #4285f4;
+  --blue-10: #5491f5;
+  --blue-20: #679df6;
+  --blue-30: #7aa9f7;
+  --blue-40: #8db5f8;
+  --blue-50: #a0c2f9;
+  --blue-60: #b3cefa;
+  --blue-70: #c6dafb;
+  --blue-80: #d9e6fc;
+  --blue-90: #ecf2fd;
+
+  /* Google Red Palette */
+  --red-base: #ea4335;
+  --red-10: #ec5549;
+  --red-20: #ee685d;
+  --red-30: #f07b71;
+  --red-40: #f28e85;
+  --red-50: #f4a19a;
+  --red-60: #f6b3ae;
+  --red-70: #f8c6c2;
+  --red-80: #fad9d6;
+  --red-90: #fcecea;
+
+  /* Google Yellow Palette */
+  --yellow-base: #fbbc04;
+  --yellow-10: #fbc21d;
+  --yellow-20: #fbc936;
+  --yellow-30: #fcd04f;
+  --yellow-40: #fcd668;
+  --yellow-50: #fddd81;
+  --yellow-60: #fde49a;
+  --yellow-70: #fdeab3;
+  --yellow-80: #fef1cc;
+  --yellow-90: #fef8e5;
+
+  /* Google Green Palette */
+  --green-base: #34a853;
+  --green-10: #48b064;
+  --green-20: #5cb975;
+  --green-30: #70c286;
+  --green-40: #85ca97;
+  --green-50: #99d3a9;
+  --green-60: #addcba;
+  --green-70: #c2e4cb;
+  --green-80: #d6eddc;
+  --green-90: #eaf6ed;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  font-family: 'Roboto', arial, sans-serif;
+  color: #3c4043;
+  background-color: #ffffff;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #dadce0;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 12px 0;
+  cursor: pointer;
+  font-weight: 500;
+  color: #70757a;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+}
+
+.tab.active {
+  color: #1a73e8;
+  border-bottom: 2px solid #1a73e8;
+}
+
+.main-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+.tab-content {
+  display: none;
+  height: 100%;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.tab-footer {
+  padding: 12px;
+}
+
+/* Accordion Styling */
+.accordion {
+  border-bottom: 1px solid #dadce0;
+}
+
+.accordion-header {
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 500;
+  color: #5f6368;
+}
+
+.section-1 .accordion-header {
+  border-left: 4px solid var(--blue-base)
+}
+
+.section-2 .accordion-header {
+  border-left: 4px solid var(--red-base)
+}
+
+.section-3 .accordion-header {
+  border-left: 4px solid var(--yellow-base)
+}
+
+.section-4 .accordion-header {
+  border-left: 4px solid var(--green-base)
+}
+
+.section-1 .accordion-content {
+  border-left: 4px solid;
+  border-image: linear-gradient(180deg, var(--blue-base), var(--blue-50)) 1;
+}
+
+.section-2 .accordion-content {
+   border-left: 4px solid;
+  border-image: linear-gradient(180deg, var(--red-base), var(--red-50)) 1;
+}
+
+.section-3 .accordion-content {
+   border-left: 4px solid;
+  border-image: linear-gradient(180deg, var(--yellow-base), var(--yellow-50)) 1;
+}
+
+.section-4 .accordion-content {
+  border-left: 4px solid;
+  border-image: linear-gradient(180deg, var(--green-base), var(--green-50)) 1;
+}
+
+.accordion-header:hover {
+  background-color: #f8f9fa;
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0, 1, 0, 1);
+  padding: 0 16px;
+  color: #5f6368;
+}
+
+.expanded .accordion-content {
+  max-height: 1000px; /* Large enough for content */
+  transition: max-height 0.25s ease-in;
+  padding-bottom: 20px;
+}
+
+.arrow {
+  border: solid #5f6368;
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 3px;
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+}
+
+.section-1 .arrow {
+  border-color: var(--blue-base);
+}
+
+.section-2 .arrow {
+  border-color: var(--red-base);
+}
+
+.section-3 .arrow {
+  border-color: var(--yellow-base);
+}
+
+.section-4 .arrow {
+  border-color: var(--green-base);
+}
+
+.expanded .arrow {
+  transform: rotate(-135deg);
+}
+
+.control-group {
+  margin-top: 12px;
+}
+
+.control-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #5f6368;
+  margin-bottom: 4px;
+}
+
+.control-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+  outline-color: #1a73e8;
+}
+
+.hidden {
+  display: none;
+}
+
+.action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  display: flex;
+  gap: 8px;
+  /* This aligns the buttons to the right */
+  justify-content: space-between;
+  border-bottom: 1px solid #dadce0;
+}
+
+/* Base button styles remain the same */
+.btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid #dadce0;
+  cursor: pointer;
+}
+
+.btn-save {
+  background-color: var(--blue-base);
+  color: white;
+  border: none;
+}
+
+.btn-discard {
+  background-color: white;
+  color: #5f6368;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

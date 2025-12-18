@@ -15,9 +15,17 @@ const investmentOverviewChartsSheet = () => {
   const [magicCoordinates] = initMagicCoordinates(helper.getRange(1, 1, 2, 100), { 
     periodPicker: 'periodPicker',
     startDate: 'startDate',
-    endDate: 'endDate' 
+    endDate: 'endDate',
+    currentChartConfig: 'currentChartConfig',
+    chartConfigPresets: 'chartConfigPresets'
   });
-  const {startDate, endDate} = magicCoordinates;
+
+  const {
+    startDate, 
+    endDate, 
+    currentChartConfig,
+    chartConfigPresets
+  } = magicCoordinates;
 
   const makeTimespanFormula = (amount, period) => {
     const referenceCell = toA1Notation(startDate.col, startDate.row);
@@ -40,15 +48,30 @@ const investmentOverviewChartsSheet = () => {
     }
   }
 
+  let memoizedConfiguration;
 
   const funcs = {
     getSheetName: () => {
       return INVESTMENT_OVERVIEW_CHARTS_SHEETNAME;
     },
     getMagicCoordinates: () => {
+      throw new Error('check if getMagicCoordinates should be deprecated')
       return magicCoordinates;
     },
+    setConfiguration: (data) => {
+      helper.getRange(currentChartConfig.col, currentChartConfig.row).setValue(JSON.stringify(data));
+      memoizedConfiguration = data;
+    },
+    getConfiguration: () => {
+      if (!memoizedConfiguration) {
+        const value = helper.getRange(currentChartConfig.col, currentChartConfig.row).getValue();
+        const json = JSON.parse(`{ "value": ${value} }`);
+        memoizedConfiguration = json.value;
+      }
+      return memoizedConfiguration;
+    },
     onTimePeriodChange: ({range}) => {
+      throw new Error('check if onTimePeriodChange should be deprecated')
       const periodValue = range.getValue();
 
       if (periodValue === 'Custom') {
