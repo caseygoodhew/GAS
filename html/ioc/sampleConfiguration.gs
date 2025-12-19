@@ -1,0 +1,36 @@
+function getSampleIOCConfiguration() {
+  return [
+   {
+      "offsetPeriod":"6-months",
+      "taxYear":"24/25",
+      "dateSameAs":"2",
+      "dateRangeMode":"current",
+      "startDate":"",
+      "endDate":""
+   },
+   {
+      "dateRangeMode":"fixed-start",
+      "endDate":"",
+      "startDate":"2025-10-08",
+      "offsetPeriod":"2-weeks",
+      "taxYear":"24/25",
+      "dateSameAs":"1"
+   },
+   {
+      "offsetPeriod":"1-week",
+      "taxYear":"22/23",
+      "dateSameAs":"1",
+      "dateRangeMode":"tax-year",
+      "startDate":"",
+      "endDate":""
+   },
+   {
+      "dateRangeMode":"custom",
+      "startDate":"2025-08-01",
+      "endDate":"2025-12-01",
+      "taxYear":"24/25",
+      "dateSameAs":"1",
+      "offsetPeriod":"1-week"
+   }
+];
+}

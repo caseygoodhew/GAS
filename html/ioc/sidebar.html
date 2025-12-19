@@ -51,7 +51,7 @@
 
               <div id="datePeriodContainer<?= sectionNum ?>" class="control-group hidden">
                 <label class="control-label">Period</label>
-                <select id="startDateOffsetPeriod<?= sectionNum ?>" class="control-input">
+                <select id="offsetPeriod<?= sectionNum ?>" class="control-input">
                   <option value="1-week">1 Week</option>
                   <option value="2-weeks">2 Weeks</option>
                   <option value="1-month">1 Month</option>
@@ -109,7 +109,7 @@
                       .forEach((optionNum) => { 
                         if (optionNum !== sectionNum) {
                   ?>
-                  <option value="chart<?= optionNum ?>">Chart <?= optionNum ?></option>
+                  <option value="<?= optionNum ?>">Chart <?= optionNum ?></option>
                   <? }
                   }); ?>
                 </select>

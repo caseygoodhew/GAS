@@ -82,9 +82,9 @@ const commonFailureHandler = (error, options) => {
   showError(options.failure, error);
 }
 
-const showError = (msg, error) => {
-  showAlert(msg, error.message);
-  console.error(`${msg}\n${error.toString()}\n${error.stack}`);
+const showError = (title, error) => {
+  console.error(`${title}\n${error.message ?? error}\n\nStack trace\n${error.stack}`);
+  showAlert(title, error.message ?? error);
 }
 
 /**

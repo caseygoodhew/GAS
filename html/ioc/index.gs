@@ -12,6 +12,21 @@ const getIOCCurrentConfiguration = () => {
 }
 
 const setIOCCurrentConfiguration = data => {
+  const validator = iocConfigurationValidator();
+  const { ERROR, WARN } = validator.getConstants();
+
+  const results = validator.validate(data);
+  
+  if (results.status === ERROR) {
+    throw new UserError(results)
+  }
+  
   investmentOverviewChartsSheet().setConfiguration(data);
+
+  if (results.status === WARN) {
+    throw new UserError(results)
+  }
 }
+
+
 
