@@ -12,3 +12,23 @@ function includeCommon() {
     include('html/common_javascript')
   ].join('\n');
 }
+
+function apiResponse(value) {
+  return { value: JSON.stringify(value) };
+}
+
+const formatToYYYYMMDD = (date) => {
+  if (typeof date === 'string') {
+    // try to convert it to a date - a valid usecase would be TZ included
+    date = new Date(date);
+  }
+  
+  const format = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  
+  // Note: en-CA (Canada) conveniently defaults to YYYY-MM-DD
+  return format.format(date);
+};

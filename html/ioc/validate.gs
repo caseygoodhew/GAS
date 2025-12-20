@@ -242,19 +242,26 @@ const iocConfigurationValidator = () => {
       const day = parts?.day;
 
       let result = isNumber(year) && isNumber(month) && isNumber(day);
+      
+      validationResult.record(result, {
+        ...context,
+        level: ERROR,
+        message: `Unexpected value for ${context.prop} (${isEmpty(value) ? 'empty' : value}) - expected a date similar to 2025-09-19 (Sept 19, 2025)`
+      });
+
       if (result) {
         const date = new Date(year, month - 1, day);
         const earliest = getGlobalsSheet().getEarliest();
         const latest = getGlobalsSheet().getLatest();
 
         result = date > earliest && date <= latest;
-      }
 
-      validationResult.record(result, {
+        validationResult.record(result, {
         ...context,
         level: ERROR,
-        message: `Unexpected value for ${context.prop} (${value}) - a date similar to 2025-09-19 (Sept 19, 2025)`
+        message: `${context.prop} (${value}) is outside of valid range [${formatToYYYYMMDD(earliest)} -> ${formatToYYYYMMDD(latest)}]`
       });
+      }
     },
 
     validateOffsetPeriod: (item, context) => {

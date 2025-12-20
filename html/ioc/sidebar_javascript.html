@@ -4,7 +4,23 @@ const ERROR = 'ERROR';
 const WARN = 'WARN';
 const OK = 'OK';
 
-let lastStoredData = {};
+const lastStoredData = (() => {
+
+  let lsData = {};
+  let lsValidations = {};
+  
+  const funcs = {
+    update: (data, validations) => {
+      lsData = data;
+      lsValidations = validations || {};
+    },
+
+    getData: () => lsData,
+    getValidations: () => lsValidations
+  }
+
+  return funcs;
+})();
 
 window.addEventListener('load', function() {
   [1, 2, 3, 4].forEach(secNum => {
@@ -13,16 +29,18 @@ window.addEventListener('load', function() {
   });
 
   remoteCall({
-    handler: api => api.getIOCCurrentConfiguration(),
-    success: loadData,
-    failure: 'Error getting current configuration',
-    spinner: 'Getting configuration'
+    handler: api => api.getInitializationData(),
+    success: (data) => {
+      loadData(data['getIOCCurrentConfiguration']);
+      lastStoredData.update(data);
+      const globals = data['globals'];
+      setDatePickerLimits(globals.minDate, globals.maxDate);
+    },
+    failure: 'Error loading initialization data',
+    spinner: 'Getting initialization data'
   });
 
   addChangeListeners();
-
-  setSectionValidation(1, ERROR, 'Error message')
-  setSectionValidation(2, WARN, 'Warning message')
 });
 
 const addChangeListeners = () => {
@@ -31,7 +49,7 @@ const addChangeListeners = () => {
 
   fields.forEach(field => {
     field.addEventListener('change', () => {
-      setActionsEnabled(!isEqual(getData(), lastStoredData));
+      setActionsEnabled(!isEqual(getData(), lastStoredData.getData()));
     });
   });
 };
@@ -116,19 +134,52 @@ const handleSave = () => {
     handler: api => api.setIOCCurrentConfiguration(data),
     spinner: 'Saving configuration',
     success: () => {
-      lastStoredData = data;
+      lastStoredData.update(data);
       setActionsEnabled(false);
+      clearAllValidation();
     },
     userError: (payload) => {
-      debugger;
+      
+      refreshValidations(payload);
+
+      if (payload.status !== ERROR) {
+        lastStoredData.update(data, payload);
+        setActionsEnabled(false);
+      }
     },
     failure: `Error saving current configuration`
   });
   
 };
 
+const refreshValidations = payload => {
+  clearAllValidation();
+
+  if (!payload.results) {
+    return;
+  }
+      
+  const grouped = Object.values(payload.results.reduce((acc, item) => {
+    acc[item.secNum] = acc[item.secNum] || { level: OK, secNum: item.secNum, results: [] };
+    acc[item.secNum].results.push(item);
+
+    if (acc[item.secNum].level === ERROR || item.level === ERROR) {
+      acc[item.secNum].level = ERROR;
+    } else if (acc[item.secNum].level === WARN || item.level === WARN) {
+      acc[item.secNum].level = WARN;
+    }
+
+    return acc;
+  }, {}));
+
+  grouped.forEach(group => {
+    setSectionValidation(group.secNum, group.level, ...group.results.map(x => x.message)) 
+  });
+};
+
 const handleDiscard = () => {
-  loadData(lastStoredData);
+  loadData(lastStoredData.getData());
+  refreshValidations(lastStoredData.getValidations());
   setActionsEnabled(false);
 };
 
@@ -161,10 +212,6 @@ const loadData = (data) => {
       }
     });  
   }
-
-
-
-  lastStoredData = data;
 };
 
 const getData = () => {
@@ -196,7 +243,11 @@ const setSectionValidation = (secNum, type, ...messages) => {
 
   // Reset states
   icon.classList.remove('error', 'warn');
+  icon.classList.add('hidden');
+
+  box.classList.remove('error', 'warn');
   box.classList.add('hidden');
+  
   listElement.innerHTML = ''; // Clear previous list items
 
   // Exit if clearing validation
@@ -212,16 +263,46 @@ const setSectionValidation = (secNum, type, ...messages) => {
   box.classList.remove('hidden');
   box.classList.add(type.toLowerCase());
   
+  let alreadyShown = [];
   messages.forEach(msg => {
-    const li = document.createElement('li');
-    li.innerText = msg;
-    listElement.appendChild(li);
+    // there's circular ref checks that can be included twice - easiest just to dedupe at this level
+    if (!alreadyShown.includes(msg)) {
+      const li = document.createElement('li');
+      li.innerText = msg;
+      listElement.appendChild(li);
+      alreadyShown.push(msg);
+    }
   });
   
   // Optional: Auto-expand the section if there is an error
   if (type === ERROR) {
     document.getElementById(`sec${secNum}`).classList.add('expanded');
   }
+};
+
+/**
+ * Clears all validation errors and warnings for all 4 sections
+ */
+const clearAllValidation = () => {
+  const sections = [1, 2, 3, 4];
+  
+  sections.forEach(secNum => {
+    // We pass OK to trigger your existing 'Reset states' logic 
+    // and the early 'return' in setSectionValidation.
+    setSectionValidation(secNum, OK);
+  });
+};
+
+const setDatePickerLimits = (minDate, maxDate) => {
+  const datePickers = document.querySelectorAll('input[type="date"]');
+  
+  minDate = formatToYYYYMMDD(minDate);
+  maxDate = formatToYYYYMMDD(maxDate);
+
+  datePickers.forEach(picker => {
+    picker.setAttribute('min', minDate);
+    picker.setAttribute('max', maxDate);
+  });
 };
 
 </script>

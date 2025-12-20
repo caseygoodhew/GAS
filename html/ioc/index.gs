@@ -7,6 +7,16 @@ const showIOCChartConfigurationSidebar = () => {
   SpreadsheetApp.getUi().showSidebar(html);
 };
 
+const getInitializationData = () => {
+  return apiResponse({
+    'getIOCCurrentConfiguration': getIOCCurrentConfiguration(),
+    'globals': {
+      'minDate': getGlobalsSheet().getEarliest(),
+      'maxDate': getGlobalsSheet().getLatest(),
+    }
+  });
+}
+
 const getIOCCurrentConfiguration = () => {
   return investmentOverviewChartsSheet().getConfiguration();
 }

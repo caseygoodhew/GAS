@@ -20,6 +20,17 @@ const remoteCall = (options) => {
 
   let api = google.script.run.withUserObject(options);
 
+  const successInterceptor = (fn) => {
+    return (data, options) => {
+      
+      if (data) {
+        data = JSON.parse(data.value);
+      }
+      
+      fn(data, options);
+    }
+  }
+  
   const userErrorInterceptor = (fn) => {
     return (error, options) => {
       // "UserError: {"payload":"ooooo noooo!"}"
@@ -44,25 +55,26 @@ const remoteCall = (options) => {
     }
   }
 
+  let successFn = () => {};
   if (success) {
-    api = api.withSuccessHandler(finallyWrapper(success));
+    successFn = successInterceptor(success);
   }
+  api = api.withSuccessHandler(finallyWrapper(successFn));
 
+  let failureFn = () => {};
   if (failure || userError) {
-    let fn = () => {};
     
     if (typeof failure === 'string') {
-      fn = commonFailureHandler;
+      failureFn = commonFailureHandler;
     } else if (failure) {
-      fn = failure;
+      failureFn = failure;
     }
 
     if (userError) {
-      fn = userErrorInterceptor(fn);
+      failureFn = userErrorInterceptor(failureFn);
     }
-
-    api = api.withFailureHandler(finallyWrapper(fn));
   }
+  api = api.withFailureHandler(finallyWrapper(failureFn));
 
   try {
     if (spinner) {
@@ -70,9 +82,10 @@ const remoteCall = (options) => {
     }
     handler(api);
   } catch (e) {
-    if (failure) {
-      failure(e, options);
-    } else {
+    
+    finallyWrapper(failureFn)(e, options);
+    
+    if (!failure) {
       throw e;
     }
   }  
@@ -167,6 +180,22 @@ const showSpinner = (msg = 'Loading...') => {
  */
 const hideSpinner = () => {
   document.getElementById('spinnerModal').classList.add('hidden');
+};
+
+const formatToYYYYMMDD = (date) => {
+  if (typeof date === 'string') {
+    // try to convert it to a date - a valid usecase would be TZ included
+    date = new Date(date);
+  }
+  
+  const format = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  
+  // Note: en-CA (Canada) conveniently defaults to YYYY-MM-DD
+  return format.format(date);
 };
 
 </script>
