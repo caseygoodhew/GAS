@@ -23,10 +23,16 @@
         ?>
           <div class="accordion section-<?= sectionNum ?>" id="sec<?= sectionNum ?>">
             <div class="accordion-header" onclick="toggleSection('sec<?= sectionNum ?>')">
-              <p>Chart <?= sectionNum ?></p>
+              <div class="header-left">
+                <div id="statusIcon<?= sectionNum ?>" class="status-icon hidden"></div>
+                <p>Chart <?= sectionNum ?></p>
+              </div>
               <i class="arrow"></i>
             </div>
             <div class="accordion-content">
+              <div id="validationBox<?= sectionNum ?>" class="validation-box hidden">
+                <div class="validation-icon-inline"></div> <ul id="validationList<?= sectionNum ?>" class="validation-list"></ul>
+              </div>
               <div class="control-group">
                 <label class="control-label">Date Range</label>
                 <select id="dateRangeMode<?= sectionNum ?>" class="control-input" onchange="handleDateRangeModeChange(<?= sectionNum ?>, this.value)">

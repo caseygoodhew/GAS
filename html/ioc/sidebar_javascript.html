@@ -1,12 +1,16 @@
 <script>
 
+const ERROR = 'ERROR';
+const WARN = 'WARN';
+const OK = 'OK';
+
 let lastStoredData = {};
 
 window.addEventListener('load', function() {
   [1, 2, 3, 4].forEach(secNum => {
     const initialValue = document.getElementById(`dateRangeMode${secNum}`).value;
     handleDateRangeModeChange(secNum, initialValue);
-  })
+  });
 
   remoteCall({
     handler: api => api.getIOCCurrentConfiguration(),
@@ -16,6 +20,9 @@ window.addEventListener('load', function() {
   });
 
   addChangeListeners();
+
+  setSectionValidation(1, ERROR, 'Error message')
+  setSectionValidation(2, WARN, 'Warning message')
 });
 
 const addChangeListeners = () => {
@@ -175,5 +182,46 @@ const getData = () => {
 
   return data;
 }
+
+/**
+ * Updates the UI validation state for a specific section
+ * @param {number} secNum - The section index (1-4)
+ * @param {string|null} type - 'error', 'warning', or null to clear
+ * @param {string} message - The text to display
+ */
+const setSectionValidation = (secNum, type, ...messages) => {
+  const icon = document.getElementById(`statusIcon${secNum}`);
+  const box = document.getElementById(`validationBox${secNum}`);
+  const listElement = document.getElementById(`validationList${secNum}`);
+
+  // Reset states
+  icon.classList.remove('error', 'warn');
+  box.classList.add('hidden');
+  listElement.innerHTML = ''; // Clear previous list items
+
+  // Exit if clearing validation
+  if (type === OK) {
+    return;
+  } 
+
+  // Show Icon
+  icon.classList.remove('hidden');
+  icon.classList.add(type.toLowerCase());
+
+  // Show Message Box
+  box.classList.remove('hidden');
+  box.classList.add(type.toLowerCase());
+  
+  messages.forEach(msg => {
+    const li = document.createElement('li');
+    li.innerText = msg;
+    listElement.appendChild(li);
+  });
+  
+  // Optional: Auto-expand the section if there is an error
+  if (type === ERROR) {
+    document.getElementById(`sec${secNum}`).classList.add('expanded');
+  }
+};
 
 </script>
