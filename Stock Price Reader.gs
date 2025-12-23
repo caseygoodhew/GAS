@@ -19,12 +19,18 @@ const initStockPriceReader = (useSnapshot) => {
     const rawData = stockPriceSnapshotSheet.getData();
 
     const symbols = rawData.splice(0, 1)[0];
+    const companyNames = rawData.splice(0, 1)[0];
     const currencies = rawData.splice(0, 1)[0];
     const [map, array] = symbols.reduce((acc, symbol, index) => {
       
       const data = [];
       if (symbol) {
-        const store = { symbol, currency: currencies[index], data };
+        const store = { 
+          symbol, 
+          currency: currencies[index], 
+          companyName: companyNames[index], 
+          data 
+        };
         acc[0][symbol] = store;
       }
       acc[1].push(data);
@@ -50,10 +56,12 @@ const initStockPriceReader = (useSnapshot) => {
     const [locationOf] = initMagicCoordinates(helper.getRange(1, 1, 100, 1), { 
       firstDate: 'firstDate',
       financeFormula: 'financeFormula',
+      companyName: 'companyName',
       currency: 'currency'
     });
 
     const currency = helper.getRange(locationOf.currency.col, locationOf.currency.row).getValue();
+    const companyName = helper.getRange(locationOf.companyName.col, locationOf.companyName.row).getValue();
 
     const values = helper.getRange("A", locationOf.firstDate.row, "C", helper.getLastRow()).getValues();
 
@@ -70,7 +78,7 @@ const initStockPriceReader = (useSnapshot) => {
       throw new Error(`Most recent stock price record for ${symbol} is more than a week out of date. Please refresh the dates (${getGlobalsSheet().getSheetName()} sheet)`)
     }
     
-    return { symbol, currency, data };
+    return { symbol, currency, companyName, data };
   }
 
   const memoisedFastFind = {};
@@ -120,13 +128,19 @@ const initStockPriceReader = (useSnapshot) => {
         symbol,
         date: new Date(closest.date),
         price: closest.price,
-        currency: funcs.getCurrencyOf(symbol)
+        currency: funcs.getCurrencyOf(symbol),
+        companyName: funcs.getCompanyNameOf(symbol)
       }
     },
 
     getCurrencyOf: (symbol) => {
       const history = funcs.getHistoryOf(symbol);
       return history.currency;
+    },
+
+    getCompanyNameOf: (symbol) => {
+      const history = funcs.getHistoryOf(symbol);
+      return history.companyName;
     }
   }
 

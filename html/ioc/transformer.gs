@@ -1,5 +1,7 @@
 const testTransformIOCConfiguration = () => {
-  const result = transformIOCConfiguration().transform(getSampleIOCConfiguration());
+  const sample = getSampleIOCConfiguration();
+  //sample[0].dateRangeMode = 'same-as';
+  const result = transformIOCConfiguration().transform(sample);
   const actual = JSON.stringify(result);
 
   // Sheets and JSON stringify seem to serialize TZ differently, so 17:00 is ok in this check
@@ -117,9 +119,12 @@ const transformIOCConfiguration = () => {
         }
         
       case 'same-as':
-        const index = parseInt(item.sameDateAs, 10) - 1;
+        const index = parseInt(item.dateSameAs, 10) - 1;
         if (others[index]) {
-          return { ...others[index] }
+          return { 
+            startDate: others[index].startDate,
+            endDate: others[index].endDate
+          }
         }
         
         return false;
@@ -141,7 +146,7 @@ const transformIOCConfiguration = () => {
     transform: (configuration) => {
       const dates = [];
 
-      while (dates.length !== configuration.length || dates.filter(x => !x).length > 1) {
+      while (dates.length !== configuration.length || dates.filter(x => !x).length > 0) {
         for (let i = 0; i < configuration.length; i++) {
           if (!dates[i]) {
             dates[i] = calculateDateRange(configuration[i], dates);

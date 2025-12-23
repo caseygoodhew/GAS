@@ -47,6 +47,7 @@ const stockPriceSnapshotSheet = (() => {
       
       const result = [];
       result.push(['', ...symbols]);
+      result.push(['', ...symbols.map(symbol => stockPriceSnapshotBuilder.getCompanyNameOf(symbol))]);
       result.push(['', ...symbols.map(symbol => stockPriceSnapshotBuilder.getCurrencyOf(symbol))]);
 
       for (let date = latestDate; date >= earliestDate; date = setTime(addDays(date, -1), 18)) {

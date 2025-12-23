@@ -13,16 +13,16 @@ const investmentOverviewChartsSheet = () => {
   const INVESTMENT_OVERVIEW_CHARTS_SHEETNAME = 'Investment Overview Charts';
   const helper = makeHelper(INVESTMENT_OVERVIEW_CHARTS_SHEETNAME);
   const [magicCoordinates] = initMagicCoordinates(helper.getRange(1, 1, 2, 100), { 
-    periodPicker: 'periodPicker',
+    dateRangeStart: 'dateRangeStart',
+    /*periodPicker: 'periodPicker',
     startDate: 'startDate',
-    endDate: 'endDate',
+    endDate: 'endDate',*/
     currentChartConfig: 'currentChartConfig',
     chartConfigPresets: 'chartConfigPresets'
   });
 
   const {
-    startDate, 
-    endDate, 
+    dateRangeStart,
     currentChartConfig,
     chartConfigPresets
   } = magicCoordinates;
@@ -58,17 +58,24 @@ const investmentOverviewChartsSheet = () => {
       throw new Error('check if getMagicCoordinates should be deprecated')
       return magicCoordinates;
     },
-    setConfiguration: (data) => {
+    storeConfiguration: (data) => {
       helper.getRange(currentChartConfig.col, currentChartConfig.row).setValue(JSON.stringify(data));
       memoizedConfiguration = data;
     },
-    getConfiguration: () => {
+    loadConfiguration: () => {
       if (!memoizedConfiguration) {
         const value = helper.getRange(currentChartConfig.col, currentChartConfig.row).getValue();
         const json = JSON.parse(`{ "value": ${value} }`);
         memoizedConfiguration = json.value;
       }
       return memoizedConfiguration;
+    },
+    updateCharts: data => {
+      const dateValues = pivotArray(data.map(item => [item.startDate, item.endDate]));
+
+      //throw new Error(JSON.stringify(data, undefined, 2))
+
+      helper.getRangeBySize(dateRangeStart.col, dateRangeStart.row, 4, 2).setValues(dateValues);
     },
     onTimePeriodChange: ({range}) => {
       throw new Error('check if onTimePeriodChange should be deprecated')

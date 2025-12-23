@@ -1,10 +1,18 @@
-
-const refreshStockGrowthFactorSnapshotSheet = () => {
-  stockGrowthFactorSnapshotSheet.refresh();
+const testStockGrowthFactorSnapshotSheet = () => {
+  const headings = stockGrowthFactorSnapshotSheet().getFactorLabels();
+  const aaa = 0;
 }
 
+const refreshStockGrowthFactorSnapshotSheet = () => {
+  stockGrowthFactorSnapshotSheet().refresh();
+}
 
-const stockGrowthFactorSnapshotSheet = (() => {
+let memoizedStockGrowthFactorSnapshotSheet;
+const stockGrowthFactorSnapshotSheet = () => {
+  
+  if (memoizedStockGrowthFactorSnapshotSheet) {
+    return memoizedStockGrowthFactorSnapshotSheet;
+  }
   
   const STOCK_GROWTH_FACTOR_SNAPSHOT_SHEETNAME = 'Stock Growth Factor Snapshot'
 
@@ -235,22 +243,54 @@ const stockGrowthFactorSnapshotSheet = (() => {
   }
 
 
-
+  const helper = makeHelper(STOCK_GROWTH_FACTOR_SNAPSHOT_SHEETNAME);
+  const [{ 
+    topLeftPosition,
+    datestampCell,
+    elapsedTimeCell,
+  }] = initMagicCoordinates(helper.getRange(1, 1, 1, 100), { 
+    topLeftPosition: 'topLeftPosition',
+    lastUpdated: 'datestampCell',
+    executionTime: 'elapsedTimeCell' 
+  });
 
   
   const funcs = {
-    refresh: () => {
+    getFactorLabels: () => {
+      const renameSections = {
+        Account: 'accounts',
+        Symbol: 'symbols',
+        Currency: 'currencies'
+      };
 
-      const helper = makeHelper(STOCK_GROWTH_FACTOR_SNAPSHOT_SHEETNAME);
-      const [{ 
-        topLeftPosition,
-        datestampCell,
-        elapsedTimeCell,
-      }] = initMagicCoordinates(helper.getRange(1, 1, 1, 100), { 
-        topLeftPosition: 'topLeftPosition',
-        lastUpdated: 'datestampCell',
-        executionTime: 'elapsedTimeCell' 
-      });
+      const values = helper.getRange(
+        topLeftPosition.col, 
+        topLeftPosition.row, 
+        helper.getLastColumn(), 
+        topLeftPosition.row + 1
+      ).getValues();
+
+      return values[0].reduce((acc, _, index) => {
+        const section = values[0][index];
+
+        if (section === 'Date') {
+          return acc;
+        }
+
+        const value = values[1][index];
+        const key = (renameSections[section] || section).toLowerCase();
+
+        acc[key] = acc[key] || [];
+
+        if (!acc[key].includes(value)) {
+          acc[key].push(value);
+        }
+
+        return acc;
+      }, {});
+    },
+    
+    refresh: () => {
 
       const performance = performanceStats({ helper, datestampCell, elapsedTimeCell }).start();
 
@@ -444,13 +484,11 @@ const stockGrowthFactorSnapshotSheet = (() => {
           counter++;
         }
       });
-    
     }
-
   }
   
+  memoizedStockGrowthFactorSnapshotSheet = funcs;
   return funcs;
-
-})();
+};
 
 

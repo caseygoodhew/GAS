@@ -101,6 +101,10 @@ const makeHelper = (sheet, labeledColumnMap) => {
       return toColLetter(colNum);
     },
 
+    getRangeBySize: (col, row, height, width) => {
+      return fns.getRange(col, row, col + height - 1, row + width  - 1);
+    },
+
     getRange: (col, row, toCol, toRow) => {
       if (col == null) {
         throw new Error('col must be provided');

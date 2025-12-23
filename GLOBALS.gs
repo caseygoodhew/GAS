@@ -1,3 +1,8 @@
+const testGlobalSheet = () => {
+  const accounts = getGlobalsSheet().getAccounts();
+  const aaa = 0;
+}
+
 let memoizedGlobalsSheet;
 
 const getGlobalsSheet = () => {
@@ -9,15 +14,30 @@ const getGlobalsSheet = () => {
   const GLOBALS_SHEET_NAME = 'GLOBALS';
 
   const helper = makeHelper(GLOBALS_SHEET_NAME);
-  const [dateRefs] = initMagicCoordinates(helper.getRange(1, 1, 50, 3), {
+  const [refs] = initMagicCoordinates(helper.getRange(1, 1, 50, 3), {
     earliestDate: 'earliestDate',
     latestDate: 'latestDate',
-    todayRef: 'todayRef'
+    todayRef: 'todayRef',
+    accountsFirst: 'accountsFirst',
+    accountsLast: 'accountsLast'
   });
 
-  const earliest = helper.getRange(dateRefs.earliestDate.col, dateRefs.earliestDate.row).getValue();
-  const latest = helper.getRange(dateRefs.latestDate.col, dateRefs.latestDate.row).getValue();
-  let todayRef = helper.getRange(dateRefs.todayRef.col, dateRefs.todayRef.row).getValue();
+  const earliest = helper.getRange(refs.earliestDate.col, refs.earliestDate.row).getValue();
+  const latest = helper.getRange(refs.latestDate.col, refs.latestDate.row).getValue();
+  let todayRef = helper.getRange(refs.todayRef.col, refs.todayRef.row).getValue();
+
+  const accounts = helper.getRange(
+    refs.accountsFirst.col, 
+    refs.accountsFirst.row, 
+    refs.accountsLast.col + 1, 
+    refs.accountsLast.row
+  ).getValues().reduce((acc, row) => {
+    const key = row[0].trim();
+    if (key) {
+      acc[key] = row[1] 
+    }
+    return acc;
+  }, {});
 
   if (!isDate(earliest)) {
     throw new Error(`Expected "earliest" to be a date, got ${earliest}`);
@@ -50,9 +70,13 @@ const getGlobalsSheet = () => {
 
     refreshTodayRef: () => {
       const date = new Date();
-      helper.getRange(dateRefs.todayRef.col, dateRefs.todayRef.row).setValue(date);
+      helper.getRange(refs.todayRef.col, refs.todayRef.row).setValue(date);
       todayRef = date;
-    } 
+    },
+
+    getAccounts: () => {
+      return {...accounts};
+    }
   }
 
   memoizedGlobalsSheet = funcs;

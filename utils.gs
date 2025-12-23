@@ -412,7 +412,8 @@ const pivotArray = (array) => {
   }
 
   if (!isArray(array[0])) {
-    throw new Error(`Expected an array or arrays, got a monstrosity`);
+    //throw new Error(JSON.stringify(array, undefined, 2))
+    throw new Error(`Expected an array of arrays, got a monstrosity`);
   }
 
   // 1. Get the number of columns (length of the first row)
