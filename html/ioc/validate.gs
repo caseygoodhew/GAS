@@ -4,7 +4,8 @@ const iocConfigurationValidator = () => {
   const WARN = 'WARN';
   const OK = 'OK';
 
-  const offsetPeriodRe = /^([0-9]+)\-(day|days|week|weeks|month|months|year|years)$/i
+  const offsetPeriodRe = transformIOCConfiguration().getOffsetPeriodRe();
+  const taxYearRe = transformIOCConfiguration().getTaxYearRe();
 
   const validationResult = (() => {
     const results = [];
@@ -191,23 +192,27 @@ const iocConfigurationValidator = () => {
 
     validateTaxYear: (item, context) => {
       const value = item.taxYear;
-      const parts = (value+'').split('/');
-
-      const firstYear = parseInt(parts[0], 10);
-      const secondYear = parseInt(parts[1], 10);
-
-      let result = isNumber(firstYear) && isNumber(secondYear);
+      let result = taxYearRe.test(value);
 
       if (result) {
-        result = firstYear + 1 === secondYear;
-        result = result && firstYear >= 22 && secondYear <= (new Date().getFullYear() - 2000);
-      }
+        const matches = value.match(taxYearRe);
 
+        const firstYear = parseInt(matches[1], 10);
+        const secondYear = parseInt(matches[2], 10);
+
+        result = isNumber(firstYear) && isNumber(secondYear);
+        
+        if (result) {
+          result = firstYear + 1 === secondYear;
+          result = result && firstYear >= 22 && secondYear <= (new Date().getFullYear() - 2000);
+        }
+      }
+    
       validationResult.record(result, {
         ...context,
         prop: 'taxYear',
         level: ERROR,
-        message: `Unexpected value for taxYear (${value}) - expected a short year (slash) short year (e.g. 24/25)`
+        message: `Unexpected value for taxYear (${value}) - expected a consecutive short year (slash) short year (e.g. 24/25)`
       });
     },
 
@@ -286,10 +291,3 @@ const iocConfigurationValidator = () => {
     getConstants: () => ({ ERROR, WARN, OK })
   };
 }
-
-
-
-
-
-
-
