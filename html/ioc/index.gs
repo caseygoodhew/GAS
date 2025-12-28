@@ -1,5 +1,6 @@
 const testIOCGetFactorConfigs = () => {
-  getFactorConfigs();
+  const result = getIOCFactorConfigs();
+  const aaa = 0;
 }
 
 const showIOCChartConfigurationSidebar = () => {
@@ -11,9 +12,9 @@ const showIOCChartConfigurationSidebar = () => {
   SpreadsheetApp.getUi().showSidebar(html);
 };
 
-const getInitializationData = () => {
+const getIOCInitializationData = () => {
   return apiResponse({
-    'getFactorConfigs': getFactorConfigs(),
+    'getIOCFactorConfigs': getIOCFactorConfigs(),
     'getIOCCurrentConfiguration': getIOCCurrentConfiguration(),
     'globals': {
       'minDate': getGlobalsSheet().getEarliest(),
@@ -22,11 +23,21 @@ const getInitializationData = () => {
   });
 }
 
-const getFactorConfigs = () => {
-  const factorLabels = stockGrowthFactorSnapshotSheet().getFactorLabels();
+const getIOCFactorConfigs = () => {
+  const factors = stockGrowthFactorSnapshotSheet().getFactorLabels();
   const accountNames = getGlobalsSheet().getAccounts();
-  const symbolNames = factorLabels.symbols.map(symbol => stockPriceReader.getCompanyNameOf(symbol));
-  const aaa = 0;
+  
+  return {
+    all: factors['all'][0],
+    accounts: factors['accounts'].reduce((acc, key) => ({
+      ...acc,
+      [key]: accountNames[key]
+    }), {}),
+    symbols: factors['symbols'].reduce((acc, key) => ({
+      ...acc,
+      [key]: stockPriceReader.getCompanyNameOf(key)
+    }), {})
+  };
 }
 
 const getIOCCurrentConfiguration = () => {

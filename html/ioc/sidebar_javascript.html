@@ -29,12 +29,16 @@ window.addEventListener('load', function() {
   });
 
   remoteCall({
-    handler: api => api.getInitializationData(),
+    handler: api => api.getIOCInitializationData(),
     success: (data) => {
-      loadData(data['getIOCCurrentConfiguration']);
-      lastStoredData.update(data);
       const globals = data['globals'];
       setDatePickerLimits(globals.minDate, globals.maxDate);
+      
+      applyFactorConfig(data['getIOCFactorConfigs'])
+
+      // lastly we load the last used data
+      loadData(data['getIOCCurrentConfiguration']);
+      lastStoredData.update(data);
     },
     failure: 'Error loading initialization data',
     spinner: 'Getting initialization data'
@@ -304,5 +308,9 @@ const setDatePickerLimits = (minDate, maxDate) => {
     picker.setAttribute('max', maxDate);
   });
 };
+
+const applyFactorConfig = (config) => {
+  console.logJSON(config)
+}
 
 </script>

@@ -299,7 +299,7 @@ const stockGrowthFactorSnapshotSheet = () => {
       const purples = colorArray('#d9d2e9', .3, 4);
 
       const groups = mergeGrowthFactorGroups(
-        calculateGrowthFactorBy({ label: 'All', out: ['factor'], toCurrency: 'GBP', colors: blues }, () => 'All (GBP)'),
+        calculateGrowthFactorBy({ label: 'All', out: ['factor'], toCurrency: 'GBP', colors: blues }, () => 'All (in GBP)'),
         calculateGrowthFactorBy({ label: 'Account', out: ['factor'], colors: greens }, (item) => item.account),
         //calculateGrowthFactorBy('Currency', (item) => item.currency),
         calculateGrowthFactorBy({ label: 'Symbol', out: ['openingValue', 'valueChange'], colors: purples }, (item) => item.symbol),
