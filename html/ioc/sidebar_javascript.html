@@ -4,6 +4,26 @@ const ERROR = 'ERROR';
 const WARN = 'WARN';
 const OK = 'OK';
 
+const SYMBOLS = 'SYMBOLS';
+const SYMBOL_MAP = 'SYMBOL_MAP';
+
+const setGlobalConfig = (name, values) => {
+  document.globalConfig = document.globalConfig || {};
+  document.globalConfig[name] = values;
+}
+
+const getGlobalConfig = (name) => {
+  if (!document.globalConfig) {
+    throw new Error(`globalConfig has not been initialized (getting ${name})`);
+  }
+
+  if (!document.globalConfig[name]) {
+    throw new Error(`globalConfig[${name}] has not been initialized`);
+  }
+
+  return document.globalConfig[name];
+}
+
 const lastStoredData = (() => {
 
   let lsData = {};
@@ -34,11 +54,17 @@ window.addEventListener('load', function() {
       const globals = data['globals'];
       setDatePickerLimits(globals.minDate, globals.maxDate);
       
-      applyFactorConfig(data['getIOCFactorConfigs'])
+      setAccountPickerOptions(data['getIOCFactorConfigs']['accounts']);
+      storeSymbols(data['getIOCFactorConfigs']['symbols']);
 
       // lastly we load the last used data
-      loadData(data['getIOCCurrentConfiguration']);
-      lastStoredData.update(data);
+      let storedConfig = data['getIOCCurrentConfiguration'];
+      if (storedConfig) {
+        loadData(storedConfig);
+      } else {
+        storedConfig = getData();
+      }
+      lastStoredData.update(storedConfig);
     },
     failure: 'Error loading initialization data',
     spinner: 'Getting initialization data'
@@ -52,11 +78,13 @@ const addChangeListeners = () => {
   const fields = document.querySelectorAll('#setup input, #setup select');
 
   fields.forEach(field => {
-    field.addEventListener('change', () => {
-      setActionsEnabled(!isEqual(getData(), lastStoredData.getData()));
-    });
+    field.addEventListener('change', onAnyDataChange);
   });
 };
+
+const onAnyDataChange = debounce(() => {
+  setActionsEnabled(!isEqual(getData(), lastStoredData.getData()));
+});
 
 const openTab = (evt, tabName) => {
   const contents = document.getElementsByClassName("tab-content");
@@ -189,47 +217,113 @@ const handleDiscard = () => {
 
 const getFields = () => {
   return {
-    'dateRangeMode': {
-      onLoad: (secNum, value) => {
-        handleDateRangeModeChange(secNum, value);
-      }
-    },
-    'startDate': {},
-    'endDate': {},
-    'offsetPeriod': {},
-    'taxYear': {},
-    'dateSameAs': {},
+    bySection: {
+      'dateRangeMode': {
+        onLoad: (secNum, value) => {
+          handleDateRangeModeChange(secNum, value);
+        }
+      },
+      'startDate': {},
+      'endDate': {},
+      'offsetPeriod': {},
+      'taxYear': {},
+      'dateSameAs': {},
+      'dataSetMode': {
+        onLoad: (secNum, value) => {
+          handleDataSetModeChange(secNum, value);
+        }
+      },
+    }, 
+    byLine: {
+      'dataSetLineMode': {
+        onLoad: (secNum, lineNum, value) => {
+          handleDataSetLineModeChange(secNum, lineNum, value);
+        }
+      },
+      'account': {},
+      'symbols': {
+        onLoad: (secNum, lineNum, values) => {
+          clearSymbolTags(secNum, lineNum);
+          values.forEach(value => addSymbolTag(secNum, lineNum, value));
+        },
+        getValue: getSelectedSymbols
+      },
+    }
   };
 }
 
 const loadData = (data) => {
-  const fields = getFields();
-  const fieldNames = Object.keys(fields);
+  const {bySection, byLine} = getFields();
 
-  for (let i = 1; i <= 4; i++) {
-    fieldNames.forEach(name => {
-      const field = document.getElementById(`${name}${i}`);
-      field.value = data[i-1][name];
+  const sectionFields = Object.keys(bySection);
+  const lineFields = Object.keys(byLine);
 
-      if (fields[name].onLoad) {
-        fields[name].onLoad(i, field.value);
+  [1, 2, 3, 4].forEach(secNum => {
+    sectionFields.forEach(name => {
+      const field = document.getElementById(`${name}${secNum}`);
+      
+      const value = data[secNum - 1][name];
+      field.value = value;
+
+      if (bySection[name].onLoad) {
+        bySection[name].onLoad(secNum, value);
       }
+    });
+
+    [1, 2, 3, 4].forEach(lineNum => {
+      lineFields.forEach(name => {
+        const field = document.getElementById(`${name}${secNum}${lineNum}`);
+      
+        const value = data[secNum - 1].lines[lineNum - 1][name];
+        field.value = value
+
+        if (byLine[name].onLoad) {
+          byLine[name].onLoad(secNum, lineNum, value);
+        }
+      });
     });  
-  }
+  });
 };
 
 const getData = () => {
-  const fields = getFields();
-  const fieldNames = Object.keys(fields);
-  const data = [];
+  const {bySection, byLine} = getFields();
+  const sectionFields = Object.keys(bySection);
+  const lineFields = Object.keys(byLine);
 
-  for (let i = 1; i <= 4; i++) {
-    data.push(fieldNames.reduce((item, name) => {
-      const field = document.getElementById(`${name}${i}`);
-      item[name] = field.value;
-      return item;
-    }, {}));  
-  }
+  const data = [1, 2, 3, 4].reduce((data, secNum) => {
+    const section = sectionFields.reduce((item, name) => {
+      
+      const field = document.getElementById(`${name}${secNum}`);
+      const value = (bySection[name].getValue) ? bySection[name].getValue(secNum) : field.value;
+      
+      return {
+        ...item,
+        [name]: value
+      };
+
+    }, {});
+
+    const lines = [1, 2, 3, 4].reduce((lines, lineNum) => {
+      const line = lineFields.reduce((item, name) => {
+        
+        const field = document.getElementById(`${name}${secNum}${lineNum}`);
+        const value = (byLine[name].getValue) ? byLine[name].getValue(secNum, lineNum) : field.value;
+
+        return {
+          ...item,
+          [name]: value
+        };
+
+      }, {});
+      
+      return [
+        ...lines,
+        line
+      ];
+    }, [])
+
+    return [...data, { ...section, lines } ];
+  }, []);
 
   return data;
 }
@@ -309,8 +403,150 @@ const setDatePickerLimits = (minDate, maxDate) => {
   });
 };
 
-const applyFactorConfig = (config) => {
-  console.logJSON(config)
+const storeSymbols = (symbols) => {
+  setGlobalConfig(
+    SYMBOL_MAP, 
+    symbols
+  );
+  
+  setGlobalConfig(
+    SYMBOLS, 
+    Object.keys(symbols).map(key => ({ key, value: symbols[key] }))
+  );
+}
+
+const handleDataSetModeChange = (secNum, mode) => {
+  const dataSetSameAsContainer = document.getElementById(`dataSetSameAsContainer${secNum}`);
+  const dataSetLineModeContainers = [1, 2, 3, 4].map(lineNum => ({
+    container: document.getElementById(`dataSetLineModeContainer${secNum}${lineNum}`),
+    field: document.getElementById(`dataSetLineMode${secNum}${lineNum}`),
+    lineNum
+  }));
+  
+
+  // Hide both by default, then selectively show
+  dataSetSameAsContainer.classList.add('hidden');
+  dataSetLineModeContainers.forEach(({container, lineNum}) => {
+    container.classList.add('hidden');
+    handleDataSetLineModeChange(secNum, lineNum);
+  });
+
+  if (mode === 'defined') {
+    dataSetLineModeContainers.forEach(({container, field, lineNum}) => {
+      container.classList.remove('hidden');
+      handleDataSetLineModeChange(secNum, lineNum, field.value)
+    });
+  } else if (mode === 'same-as') {
+    dataSetSameAsContainer.classList.remove('hidden');
+  }
+};
+
+/**
+ * Switches visibility based on the chosen Data Set mode
+ */
+const handleDataSetLineModeChange = (secNum, lineNum, mode) => {
+  
+  const accContainer = document.getElementById(`accountContainer${secNum}${lineNum}`);
+  const symContainer = document.getElementById(`symbolContainer${secNum}${lineNum}`);
+
+  // Hide both by default, then selectively show
+  accContainer.classList.add('hidden');
+  symContainer.classList.add('hidden');
+
+  if (mode === 'account') {
+    accContainer.classList.remove('hidden');
+  } else if (mode === 'symbol') {
+    symContainer.classList.remove('hidden');
+  }
+};
+
+const setAccountPickerOptions = (accounts) => {
+  const accountKeys = Object.keys(accounts);
+
+  [1, 2, 3, 4].forEach(secNum => {
+    [1, 2, 3, 4].forEach(lineNum => {
+      const dropdown = document.getElementById(`account${secNum}${lineNum}`);
+      const options = accountKeys.map(key => `<option value="${key}">${accounts[key]}</option>`);
+      dropdown.innerHTML = options.join('');
+    });
+  });
+}
+
+const populateSymbols = (secNum, lineNum) => {
+  const existing = getSelectedSymbols(secNum, lineNum);
+  
+  const dropdown = document.getElementById(`symbolSearch${secNum}${lineNum}`);
+  
+  let options = ['<option value="">Select symbols...</option>'];
+    
+  const config = getGlobalConfig(SYMBOLS);
+  
+  config.forEach(({key, value}) => {
+    if (!existing.includes(key)) {
+      options.push(`<option value="${key}">${value}</option>`);
+    }
+  });
+    
+  dropdown.innerHTML = options.join('');
+};
+
+/**
+ * Adds a visual tag for a selected symbol
+ */
+const addSymbolTag = (secNum, lineNum, symbol) => {
+  if (!symbol) return;
+
+  const existing = getSelectedSymbols(secNum, lineNum);
+  
+  if (existing.includes(symbol)) {
+    return;
+  }
+  
+  const wrapper = document.createElement('x');
+  const symbolMap = getGlobalConfig(SYMBOL_MAP);
+  
+  wrapper.innerHTML = `
+  <div class="tag">
+    <span class="tag-text" data-value="${symbol}"">${symbolMap[symbol]}</span>
+    <span class="tag-remove" onclick="removeTag(this)"></span>
+  </div>
+  `;
+
+  document.getElementById(`symbols${secNum}${lineNum}`).appendChild(wrapper.children[0]);
+  
+  // Reset dropdown to "Select symbols..."
+  document.getElementById(`symbolSearch${secNum}${lineNum}`).value = "";
+
+  populateSymbols(secNum, lineNum);
+  onAnyDataChange();
+};
+
+const getSelectedSymbols = (secNum, lineNum) => {
+  if (secNum == null) {
+    throw new Error(`Cannot getSelectedSymbols without providing a secNum`)
+  }
+  
+  return Array.from(
+    document
+      .getElementById(`symbols${secNum}${lineNum}`)
+      .querySelectorAll('.tag-text')
+    ).map(span => span.dataset.value);
+}
+
+/**
+ * Removes a tag and marks the form as dirty
+ */
+const removeTag = (element) => {
+  element.parentElement.remove();
+  onAnyDataChange();
+};
+
+const clearSymbolTags = (secNum, lineNum) => {
+  Array.from(
+    document
+      .getElementById(`symbols${secNum}${lineNum}`)
+      .querySelectorAll('.tag-remove')
+  ).forEach(el => removeTag(el));
 }
 
 </script>

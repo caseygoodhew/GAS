@@ -108,7 +108,7 @@
               </div>
 
               <div id="dateSameAsContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">Same as</label>
+                <label class="control-label">Date same as</label>
                 <select id="dateSameAs<?= sectionNum ?>" class="control-input">
                   <? 
                     [1, 2, 3, 4]
@@ -120,6 +120,61 @@
                   }); ?>
                 </select>
               </div>
+
+              <div class="control-group">
+                <label class="control-label">Data Set</label>
+                <select id="dataSetMode<?= sectionNum ?>" class="control-input" onchange="handleDataSetModeChange(<?= sectionNum ?>, this.value)">
+                  <option value="defined">By line</option>
+                  <option value="same-as">Same as</option>
+                </select>
+              </div>
+              
+              <div id="dataSetSameAsContainer<?= sectionNum ?>" class="control-group hidden">
+                <label class="control-label">Data set same as</label>
+                <select id="dataSetSameAs<?= sectionNum ?>" class="control-input">
+                  <? 
+                    [1, 2, 3, 4]
+                      .forEach((optionNum) => { 
+                        if (optionNum !== sectionNum) {
+                  ?>
+                  <option value="<?= optionNum ?>">Chart <?= optionNum ?></option>
+                  <? }
+                  }); ?>
+                </select>
+              </div>
+
+              <? 
+                [1, 2, 3, 4]
+                  .forEach((lineNum) => { 
+              ?>
+                <div id="dataSetLineModeContainer<?= sectionNum ?><?= lineNum ?>" class="control-group">
+                  <label class="control-label">Line <?= lineNum ?></label>
+                  <select id="dataSetLineMode<?= sectionNum ?><?= lineNum ?>" class="control-input" onchange="handleDataSetLineModeChange(<?= sectionNum ?>, <?= lineNum ?>, this.value)">
+                    <option value="all">All</option>
+                    <option value="account">Account</option>
+                    <option value="symbol">Symbol</option>
+                  </select>
+                </div>
+
+                <div id="accountContainer<?= sectionNum ?><?= lineNum ?>" class="control-group hidden">
+                  <label class="control-label">Select Account</label>
+                  <select id="account<?= sectionNum ?><?= lineNum ?>" class="control-input">
+                      <!-- options added dynamically on load -->
+                  </select>
+                </div>
+
+                <div id="symbolContainer<?= sectionNum ?><?= lineNum ?>" class="control-group hidden">
+                  <label class="control-label">Symbols</label>
+                  <div class="symbol-picker-wrapper">
+                    <select id="symbolSearch<?= sectionNum ?><?= lineNum ?>" class="control-input" onfocus="populateSymbols(<?= sectionNum ?>, <?= lineNum ?>)" onchange="addSymbolTag(<?= sectionNum ?>, <?= lineNum ?>, this.value)">
+                      <option value="">Select symbols...</option>
+                    </select>
+                    <div id="symbols<?= sectionNum ?><?= lineNum ?>" class="tag-cloud"></div>
+                  </div>
+                </div>
+
+               <? }); ?>
+
             </div>
           </div>
         <? }); ?>

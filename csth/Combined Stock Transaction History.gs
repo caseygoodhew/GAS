@@ -1,5 +1,6 @@
 const testCombinedStockTransactionHistorySheet = () => {
-  const result = getCombinedStockTransactionHistorySheet().getHoldingQuantityAsOf('META', new Date(2025, 8, 11));
+  //const result = getCombinedStockTransactionHistorySheet().getHoldingQuantityAsOf('META', new Date(2025, 8, 11));
+  const result = getCombinedStockTransactionHistorySheet().getSymbols()
 
   const aaa = 0;
 }

@@ -198,4 +198,24 @@ const formatToYYYYMMDD = (date) => {
   return format.format(date);
 };
 
+/**
+ * Debounce utility to prevent multiple rapid executions
+ * @param {Function} callback - The function to execute
+ * @param {number} delay - Delay in milliseconds
+ * @returns {Function}
+ */
+const debounce = (callback, delay = 1) => {
+  let timeoutId;
+  
+  return (...args) => {
+    // Clear the previous timer to reset the countdown
+    clearTimeout(timeoutId);
+    
+    // Set a new timer
+    timeoutId = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  };
+};
+
 </script>

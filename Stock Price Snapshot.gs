@@ -26,6 +26,7 @@ const stockPriceSnapshotSheet = (() => {
       memoised = data;
       return data;
     },
+    
     refresh: () => {
       const helper = makeHelper(STOCK_PRICE_SNAPSHOT_SHEETNMAE);
       const [{ 

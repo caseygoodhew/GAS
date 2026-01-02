@@ -141,6 +141,10 @@ const initStockPriceReader = (useSnapshot) => {
     getCompanyNameOf: (symbol) => {
       const history = funcs.getHistoryOf(symbol);
       return history.companyName;
+    },
+
+    getSymbols: () => {
+      
     }
   }
 

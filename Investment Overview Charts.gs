@@ -65,7 +65,8 @@ const investmentOverviewChartsSheet = () => {
     loadConfiguration: () => {
       if (!memoizedConfiguration) {
         const value = helper.getRange(currentChartConfig.col, currentChartConfig.row).getValue();
-        const json = JSON.parse(`{ "value": ${value} }`);
+        
+        const json = value == '' ? {} : JSON.parse(`{ "value": ${value} }`);
         memoizedConfiguration = json.value;
       }
       return memoizedConfiguration;

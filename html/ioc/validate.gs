@@ -11,8 +11,8 @@ const iocConfigurationValidator = () => {
     const results = [];
 
     const funcs = {
-      record: (result, context) => {
-        if (!result) {
+      record: (passed, context) => {
+        if (!passed) {
           results.push(context);
         }
       },
@@ -54,7 +54,8 @@ const iocConfigurationValidator = () => {
 
   const funcs = {
     validateAll: data => {
-      data.map((item, index) => funcs.validateOne(item, { secNum: index + 1 }))
+      data.forEach((item, index) => funcs.validateOne(item, { secNum: index + 1 }))
+      
       funcs.validateSameAsLoops(
         data.map(item => ({ mode: item.dateRangeMode, sameAs: parseInt(item.dateSameAs) })),
         { prop: 'dateSameAs' }
@@ -87,6 +88,15 @@ const iocConfigurationValidator = () => {
           break;
         default:
           throw new Error(`Unknown dateRangeMode "${item.dateRangeMode}"`);
+      }
+
+      switch (item.dataSetMode) {
+        case "defined":
+          item.lines.forEach((line, index) => funcs.validateOneLineData(line, { ...context, lineNum: index + 1 }));
+          break;
+        default:
+          debugger;
+          throw new Error(`Unknown dataSetMode "${item.dataSetMode}"`);
       }
     },
 
@@ -278,6 +288,73 @@ const iocConfigurationValidator = () => {
         prop: 'offsetPeriod',
         level: ERROR,
         message: `Unexpected value for offsetPeriod (${value}) - expected a number followed by day, days, week, weeks etc.`
+      });
+    },
+
+    validateOneLineData: (line, context) => {
+      switch (line.dataSetLineMode) {
+        case 'all':
+          // nothing to validate
+          break;   
+        case 'account':
+          funcs.validateAccount(line, context);
+          break;
+        case 'symbol':
+          funcs.validateSymbols(line, context);
+          break;
+        default:
+          throw new Error(`Unknown dataSetLineMode "${line.dataSetLineMode}"`);
+      }
+    },
+
+    validateAccount: (line, context) => {
+      const account = line.account;
+      const knownAccounts = getGlobalsSheet().getAccounts();
+      const knownAccountKeys = Object.keys(knownAccounts);
+
+      const result = knownAccountKeys.includes(account);
+
+      validationResult.record(result, {
+        ...context,
+        prop: 'account',
+        level: ERROR,
+        message: `Unexpected value for account (${account}) - expected one of [${knownAccountKeys.join(', ')}]`
+      });
+    },
+
+    validateSymbols: (line, context) => {
+      const symbols = line.symbols;
+      const knownSymbols = getCombinedStockTransactionHistorySheet().getSymbols();
+      
+      if (!isArray(symbols)) {
+        validationResult.record(false, {
+          ...context,
+          prop: 'symbols',
+          level: ERROR,
+          message: `Expected symbols to be an array, got ${typeof symbols}`
+        });
+
+        return;
+      }
+
+      //const knownAccountKeys = Object.keys(knownAccounts);
+
+      validationResult.record(symbols.length > 0, {
+        ...context,
+        prop: 'symbols',
+        level: ERROR,
+        message: `Unexpected value for symbols ([empty]) - expected at least 1 symbol to be selected`
+      });  
+
+      symbols.forEach(symbol => { 
+        const result = knownSymbols.includes(symbol);
+        
+        validationResult.record(result, {
+          ...context,
+          prop: 'symbols',
+          level: ERROR,
+          message: `Unexpected value for symbols (${symbol}) - unknown symbol`
+        });
       });
     }
   }
