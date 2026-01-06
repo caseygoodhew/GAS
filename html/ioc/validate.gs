@@ -60,6 +60,11 @@ const iocConfigurationValidator = () => {
         data.map(item => ({ mode: item.dateRangeMode, sameAs: parseInt(item.dateSameAs) })),
         { prop: 'dateSameAs' }
       );
+
+      funcs.validateSameAsLoops(
+        data.map(item => ({ mode: item.dataSetMode, sameAs: parseInt(item.dataSetSameAs) })),
+        { prop: 'dataSetSameAs' }
+      );
     },
 
     validateOne: (item, context) => {
@@ -91,9 +96,14 @@ const iocConfigurationValidator = () => {
       }
 
       switch (item.dataSetMode) {
-        case "defined":
+        case 'defined':
           item.lines.forEach((line, index) => funcs.validateOneLineData(line, { ...context, lineNum: index + 1 }));
           break;
+        
+        case 'same-as':
+          funcs.validateDataSetSameAs(item, context)
+          break;
+        
         default:
           debugger;
           throw new Error(`Unknown dataSetMode "${item.dataSetMode}"`);
@@ -175,6 +185,11 @@ const iocConfigurationValidator = () => {
     validateDateSameAs: (item, context) => {
       const value = item.dateSameAs;
       funcs.validateSameAs(value, { ...context, prop: 'dateSameAs' });
+    },
+
+    validateDataSetSameAs: (item, context) => {
+      const value = item.dataSetSameAs;
+      funcs.validateSameAs(value, { ...context, prop: 'dataSetSameAs' });
     },
 
     validateSameAs: (value, context) => {
@@ -299,7 +314,7 @@ const iocConfigurationValidator = () => {
         case 'account':
           funcs.validateAccount(line, context);
           break;
-        case 'symbol':
+        case 'holding':
           funcs.validateSymbols(line, context);
           break;
         default:

@@ -190,7 +190,8 @@ const refreshValidations = payload => {
   if (!payload.results) {
     return;
   }
-      
+  
+  let maxLevel = OK;
   const grouped = Object.values(payload.results.reduce((acc, item) => {
     acc[item.secNum] = acc[item.secNum] || { level: OK, secNum: item.secNum, results: [] };
     acc[item.secNum].results.push(item);
@@ -201,12 +202,24 @@ const refreshValidations = payload => {
       acc[item.secNum].level = WARN;
     }
 
+    if (maxLevel === ERROR || item.level === ERROR) {
+      maxLevel = ERROR;
+    } else if (maxLevel === WARN || item.level === WARN) {
+      maxLevel = WARN;
+    }
+
     return acc;
-  }, {}));
+  }, { }));
 
   grouped.forEach(group => {
     setSectionValidation(group.secNum, group.level, ...group.results.map(x => x.message)) 
   });
+//debugger;
+  if (maxLevel === ERROR) {
+    const statusTabIcon = document.getElementById(`setupTabIcon`);
+    statusTabIcon.classList.add('error-indicator');
+    statusTabIcon.classList.remove('hidden');
+  }
 };
 
 const handleDiscard = () => {
@@ -233,6 +246,7 @@ const getFields = () => {
           handleDataSetModeChange(secNum, value);
         }
       },
+      'dataSetSameAs': {}
     }, 
     byLine: {
       'dataSetLineMode': {
@@ -389,6 +403,10 @@ const clearAllValidation = () => {
     // and the early 'return' in setSectionValidation.
     setSectionValidation(secNum, OK);
   });
+
+  const statusTabIcon = document.getElementById(`setupTabIcon`);
+  statusTabIcon.classList.add('hidden');
+  statusTabIcon.classList.remove('error-indicator');
 };
 
 const setDatePickerLimits = (minDate, maxDate) => {
@@ -418,6 +436,7 @@ const storeSymbols = (symbols) => {
 const handleDataSetModeChange = (secNum, mode) => {
   const dataSetSameAsContainer = document.getElementById(`dataSetSameAsContainer${secNum}`);
   const dataSetLineModeContainers = [1, 2, 3, 4].map(lineNum => ({
+    pillContainer: document.getElementById(`definedLineContainer${secNum}${lineNum}`),
     container: document.getElementById(`dataSetLineModeContainer${secNum}${lineNum}`),
     field: document.getElementById(`dataSetLineMode${secNum}${lineNum}`),
     lineNum
@@ -426,13 +445,15 @@ const handleDataSetModeChange = (secNum, mode) => {
 
   // Hide both by default, then selectively show
   dataSetSameAsContainer.classList.add('hidden');
-  dataSetLineModeContainers.forEach(({container, lineNum}) => {
+  dataSetLineModeContainers.forEach(({pillContainer, container, lineNum}) => {
+    pillContainer.classList.add('hidden');
     container.classList.add('hidden');
     handleDataSetLineModeChange(secNum, lineNum);
   });
 
   if (mode === 'defined') {
-    dataSetLineModeContainers.forEach(({container, field, lineNum}) => {
+    dataSetLineModeContainers.forEach(({pillContainer, container, field, lineNum}) => {
+      pillContainer.classList.remove('hidden');
       container.classList.remove('hidden');
       handleDataSetLineModeChange(secNum, lineNum, field.value)
     });
@@ -455,7 +476,7 @@ const handleDataSetLineModeChange = (secNum, lineNum, mode) => {
 
   if (mode === 'account') {
     accContainer.classList.remove('hidden');
-  } else if (mode === 'symbol') {
+  } else if (mode === 'holding') {
     symContainer.classList.remove('hidden');
   }
 };

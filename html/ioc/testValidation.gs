@@ -94,12 +94,17 @@ function testIOCConfigurationValidation() {
   runDataTest('[defined][account] Missing account', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'account' }] }], ERROR, 1);
   runDataTest('[defined][account] Unknonw account', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'account', account: 'NOPE' }] }], ERROR, 1);
 
-  runDataTest('[defined][symbol] OK with 1', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'symbol', symbols: ['META'] }] }], OK);
-  runDataTest('[defined][symbol] OK with many', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'symbol', symbols: ['META', 'GOOG', 'AAPL'] }] }], OK);
-  runDataTest('[defined][symbol] Empty symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'symbol', symbols: [] }] }], ERROR, 1);
-  runDataTest('[defined][symbol] Missing symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'symbol' }] }], ERROR, 1);
-  runDataTest('[defined][symbol] Unknown symbol', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'symbol', symbols: ['FOO'] }] }], ERROR, 1);
-  runDataTest('[defined][symbol] Unknown symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'symbol', symbols: ['FOO', 'BAR'] }] }], ERROR, 2);
+  runDataTest('[defined][symbol] OK with 1', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: ['META'] }] }], OK);
+  runDataTest('[defined][symbol] OK with many', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: ['META', 'GOOG', 'AAPL'] }] }], OK);
+  runDataTest('[defined][symbol] Empty symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: [] }] }], ERROR, 1);
+  runDataTest('[defined][symbol] Missing symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding' }] }], ERROR, 1);
+  runDataTest('[defined][symbol] Unknown symbol', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: ['FOO'] }] }], ERROR, 1);
+  runDataTest('[defined][symbol] Unknown symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: ['FOO', 'BAR'] }] }], ERROR, 2);
+
+  runDataTest('[same-as] OK', [{ dataSetMode: 'same-as', dataSetSameAs: '2' }], OK);
+  runDataTest('[same-as] Empty date same as', [{ dataSetMode: 'same-as' }], ERROR, 1);
+  runDataTest('[same-as] Empty date same as', [{ dataSetMode: 'same-as', dataSetSameAs: 'A' }], ERROR, 1);
+  runDataTest('[same-as] Circular reference', [{ dataSetMode: 'same-as', dataSetSameAs: '2' }, { dataSetMode: 'same-as', dataSetSameAs: '1' }], ERROR, 2);
 }
 
 

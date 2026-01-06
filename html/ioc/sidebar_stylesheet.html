@@ -82,6 +82,39 @@ body {
   font-size: 14px;
 }
 
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px; /* Space between text and icon */
+}
+
+.tab-status-icon {
+  width: 8px;
+  height: 8px;
+  background-color: var(--red-base);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Optional: If you want it to look like the accordion error icon (!) but smaller */
+.tab-status-icon.error-indicator {
+  width: 14px;
+  height: 14px;
+  background-color: var(--red-base);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.tab-status-icon.error-indicator::before {
+  content: '!';
+}
+
 .tab.active {
   color: #1a73e8;
   border-bottom: 2px solid #1a73e8;
@@ -204,9 +237,63 @@ body {
   margin-top: 4px; /* Align within the triangle base */
 }
 
+
+/* Subtle grouping for Lines */
+.pill-container {
+  margin-top: 20px; /* More space before a new line section */
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8f9fa; /* Very light grey */
+  border: 1px solid #f1f3f4;
+}
+
+/* Add a small coloured accent to the top of each Line box */
+
+.pill-0 {
+  margin-top: 0;
+}
+
+.section-1 .pill-0 { border-top: 3px solid var(--blue-40); }
+.section-1 .pill-1 { border-top: 3px solid var(--blue-50); }
+.section-1 .pill-2 { border-top: 3px solid var(--blue-60); }
+.section-1 .pill-3 { border-top: 3px solid var(--blue-70); }
+.section-1 .pill-4 { border-top: 3px solid var(--blue-80); }
+
+.section-2 .pill-0 { border-top: 3px solid var(--red-40); }
+.section-2 .pill-1 { border-top: 3px solid var(--red-50); }
+.section-2 .pill-2 { border-top: 3px solid var(--red-60); }
+.section-2 .pill-3 { border-top: 3px solid var(--red-70); }
+.section-2 .pill-4 { border-top: 3px solid var(--red-80); }
+
+.section-3 .pill-0 { border-top: 3px solid var(--yellow-40); }
+.section-3 .pill-1 { border-top: 3px solid var(--yellow-50); }
+.section-3 .pill-2 { border-top: 3px solid var(--yellow-60); }
+.section-3 .pill-3 { border-top: 3px solid var(--yellow-70); }
+.section-3 .pill-4 { border-top: 3px solid var(--yellow-80); }
+
+.section-4 .pill-0 { border-top: 3px solid var(--green-40); }
+.section-4 .pill-1 { border-top: 3px solid var(--green-50); }
+.section-4 .pill-2 { border-top: 3px solid var(--green-60); }
+.section-4 .pill-3 { border-top: 3px solid var(--green-70); }
+.section-4 .pill-4 { border-top: 3px solid var(--green-80); }
+
+/* Customizing the Label for Line numbers to look like a badge */
+.line-item-container .control-label {
+  display: inline-block;
+  background-color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #dadce0;
+  margin-bottom: 8px;
+  color: #3c4043;
+}
+
+
+
+
 /* Validation Message Box inside Accordion */
 .validation-box {
-  margin-top: 8px;
+  margin-bottom: 20px;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 12px;

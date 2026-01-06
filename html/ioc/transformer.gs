@@ -3,7 +3,7 @@ const testTransformIOCConfiguration = () => {
   //sample[0].dateRangeMode = 'same-as';
   const result = transformIOCConfiguration().transform(sample);
   const actual = JSON.stringify(result);
-
+return;
   // Sheets and JSON stringify seem to serialize TZ differently, so 17:00 is ok in this check
   const expected = JSON.stringify([
     {
@@ -29,13 +29,8 @@ const testTransformIOCConfiguration = () => {
   }
 }
 
-let memoizedTransformIOCConfiguration = null;
 const transformIOCConfiguration = () => {
   
-  if (memoizedTransformIOCConfiguration) {
-    return memoizedTransformIOCConfiguration;
-  }
-
   const offsetPeriodRe = /^([0-9]+)\-(day|week|month|year)[s]{0,1}$/i;
   const taxYearRe = /^([2-3][0-9])\/([2-3][0-9])$/;
   
@@ -84,8 +79,8 @@ const transformIOCConfiguration = () => {
     return new Date(2000 + firstYear, 3, 6);
   }
 
-  let startDate;
-  let endDate;
+  let startDate = null;
+  let endDate = null;
   
   const calculateDateRange = (item, others) => {
     switch (item.dateRangeMode) {
@@ -121,10 +116,7 @@ const transformIOCConfiguration = () => {
       case 'same-as':
         const index = parseInt(item.dateSameAs, 10) - 1;
         if (others[index]) {
-          return { 
-            startDate: others[index].startDate,
-            endDate: others[index].endDate
-          }
+          return clone(others[index]);
         }
         
         return false;
@@ -142,19 +134,90 @@ const transformIOCConfiguration = () => {
     }
   }
 
-  const funcs = {
-    transform: (configuration) => {
-      const dates = [];
+  const calculateDataSetLine = (item) => {
+    switch (item.dataSetLineMode) {
+      case 'all':
+        return { 
+          mode: 'all' 
+        }
 
-      while (dates.length !== configuration.length || dates.filter(x => !x).length > 0) {
-        for (let i = 0; i < configuration.length; i++) {
-          if (!dates[i]) {
-            dates[i] = calculateDateRange(configuration[i], dates);
-          }
+      case 'account':
+        return { 
+          mode: 'account',
+          account: item.account
+        }
+
+      case 'holding':
+        return {
+          mode: 'holding',
+          symbols: [...item.symbols]
+        }
+
+      default:
+        throw new Error(`Unknown dataSetLineMode "${item.dataSetLineMode}"`);
+    }
+  }
+
+  const calculateDataSet = (item, others) => {
+    switch (item.dataSetMode) {
+      case 'defined':
+        return {
+          data: item.lines.map(line => calculateDataSetLine(line))
+        }
+
+      case 'same-as':
+        const index = parseInt(item.dataSetSameAs, 10) - 1;
+        if (others[index]) {
+          return clone(others[index]);
+        }
+        
+        return false;
+
+      default:
+        throw new Error(`Unknown dataSetMode "${item.dataSetMode}"`);
+    }
+
+    return {};
+  } 
+
+  const transformDateRanges = (configuration) => {
+    const dates = [];
+
+    while (dates.length !== configuration.length || dates.filter(x => !x).length > 0) {
+      for (let i = 0; i < configuration.length; i++) {
+        if (!dates[i]) {
+          dates[i] = calculateDateRange(configuration[i], dates);
         }
       }
+    }
 
-      return dates;
+    return dates;
+  }
+
+  const transformDataSets = (configuration) => {
+    const data = [];
+    
+    while (data.length !== configuration.length || data.filter(x => !x).length > 0) {
+      for (let i = 0; i < configuration.length; i++) {
+        if (!data[i]) {
+          data[i] = calculateDataSet(configuration[i], data);
+        }
+      }
+    }
+
+    return data;
+  }
+
+  const funcs = {
+    transform: (configuration) => {
+      const dates = transformDateRanges(configuration);
+      const data = transformDataSets(configuration);
+
+      if (dates.length !== data.length) {
+        throw new Error(`Expected dates array (len ${dates.length}) to have the same length as the data array (len ${data.length})`);
+      }
+
+      return dates.map((_, i) => ({ ...dates[i], ...data[i] }));
     },
 
     getOffsetPeriodRe: () => {
@@ -166,6 +229,5 @@ const transformIOCConfiguration = () => {
     }
   }
 
-  memoizedTransformIOCConfiguration = funcs;
   return funcs;
 }

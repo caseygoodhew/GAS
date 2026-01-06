@@ -7,7 +7,10 @@
   <body>
 
     <div class="tabs">
-      <div class="tab active" onclick="openTab(event, 'setup')">Setup</div>
+      <div class="tab active" onclick="openTab(event, 'setup')">
+        Setup
+        <span id="setupTabIcon" class="tab-status-icon hidden"></span>
+      </div>
       <div class="tab" onclick="openTab(event, 'presets')">Presets</div>
     </div>
 
@@ -33,146 +36,152 @@
               <div id="validationBox<?= sectionNum ?>" class="validation-box hidden">
                 <div class="validation-icon-inline"></div> <ul id="validationList<?= sectionNum ?>" class="validation-list"></ul>
               </div>
-              <div class="control-group">
-                <label class="control-label">Date Range</label>
-                <select id="dateRangeMode<?= sectionNum ?>" class="control-input" onchange="handleDateRangeModeChange(<?= sectionNum ?>, this.value)">
-                  <option value="current">Current</option>
-                  <option value="fixed-start">Fixed Start Date</option>
-                  <option value="fixed-end">Fixed End Date</option>
-                  <option value="tax-year">Tax Year</option>
-                  <option value="same-as">Same as Chart</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-
-              <div id="startDateContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">Start Date</label>
-                <input type="date" id="startDate<?= sectionNum ?>" class="control-input">
-              </div>
-
-              <div id="endDateContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">End Date</label>
-                <input type="date" id="endDate<?= sectionNum ?>" class="control-input">
-              </div>
-
-              <div id="datePeriodContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">Period</label>
-                <select id="offsetPeriod<?= sectionNum ?>" class="control-input">
-                  <option value="1-week">1 Week</option>
-                  <option value="2-weeks">2 Weeks</option>
-                  <option value="1-month">1 Month</option>
-                  <option value="3-months">3 Months</option>
-                  <option value="6-months">6 Months</option>
-                  <option value="1-year">1 Year</option>
-                  <option value="2-years">2 Years</option>
-                  <option value="3-years">3 Years</option>
-                </select>
-              </div>
-
-              <div id="taxYearContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">Tax Year</label>
-                <select id="taxYear<?= sectionNum ?>" class="control-input">
-                  <? 
-                    const getYearRange = () => {
-                      const startYear = 2022;
-                      const currentYear = new Date().getFullYear();
-                      const years = [];
-
-                      for (let year = currentYear; year >= startYear; year--) {
-                        years.push(year);
-                      }
-
-                      return years;
-                    }
-
-                    [2022].map((startYear) => {
-                      const today = new Date();
-                      const currentYear = today.getFullYear();
-                      const taxYearStart = new Date(currentYear, 3, 6);
-                      const fromYear = (today < taxYearStart) ? currentYear - 1 : currentYear;
-                      const years = [];
-
-                      for (let year = fromYear; year >= startYear; year--) {
-                        years.push(year);
-                      }
-
-                      return years;
-                    })
-                    .flat()
-                    .map(year => `${year-2001}/${year-2000}`)
-                    .forEach(taxYear => {
-                  ?>
-                    <option value="<?= taxYear ?>"><?= taxYear ?></option>
-                  <? }); ?>
-                </select>
-              </div>
-
-              <div id="dateSameAsContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">Date same as</label>
-                <select id="dateSameAs<?= sectionNum ?>" class="control-input">
-                  <? 
-                    [1, 2, 3, 4]
-                      .forEach((optionNum) => { 
-                        if (optionNum !== sectionNum) {
-                  ?>
-                  <option value="<?= optionNum ?>">Chart <?= optionNum ?></option>
-                  <? }
-                  }); ?>
-                </select>
-              </div>
-
-              <div class="control-group">
-                <label class="control-label">Data Set</label>
-                <select id="dataSetMode<?= sectionNum ?>" class="control-input" onchange="handleDataSetModeChange(<?= sectionNum ?>, this.value)">
-                  <option value="defined">By line</option>
-                  <option value="same-as">Same as</option>
-                </select>
-              </div>
               
-              <div id="dataSetSameAsContainer<?= sectionNum ?>" class="control-group hidden">
-                <label class="control-label">Data set same as</label>
-                <select id="dataSetSameAs<?= sectionNum ?>" class="control-input">
-                  <? 
-                    [1, 2, 3, 4]
-                      .forEach((optionNum) => { 
-                        if (optionNum !== sectionNum) {
-                  ?>
-                  <option value="<?= optionNum ?>">Chart <?= optionNum ?></option>
-                  <? }
-                  }); ?>
-                </select>
+              <div class="pill-container pill-0">
+                <div class="control-group">
+                  <label class="control-label">Date Range</label>
+                  <select id="dateRangeMode<?= sectionNum ?>" class="control-input" onchange="handleDateRangeModeChange(<?= sectionNum ?>, this.value)">
+                    <option value="current">Current</option>
+                    <option value="fixed-start">Fixed Start Date</option>
+                    <option value="fixed-end">Fixed End Date</option>
+                    <option value="tax-year">Tax Year</option>
+                    <option value="same-as">Same as Chart</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+
+                <div id="startDateContainer<?= sectionNum ?>" class="control-group hidden">
+                  <label class="control-label">Start Date</label>
+                  <input type="date" id="startDate<?= sectionNum ?>" class="control-input">
+                </div>
+
+                <div id="endDateContainer<?= sectionNum ?>" class="control-group hidden">
+                  <label class="control-label">End Date</label>
+                  <input type="date" id="endDate<?= sectionNum ?>" class="control-input">
+                </div>
+
+                <div id="datePeriodContainer<?= sectionNum ?>" class="control-group hidden">
+                  <label class="control-label">Period</label>
+                  <select id="offsetPeriod<?= sectionNum ?>" class="control-input">
+                    <option value="1-week">1 Week</option>
+                    <option value="2-weeks">2 Weeks</option>
+                    <option value="1-month">1 Month</option>
+                    <option value="3-months">3 Months</option>
+                    <option value="6-months">6 Months</option>
+                    <option value="1-year">1 Year</option>
+                    <option value="2-years">2 Years</option>
+                    <option value="3-years">3 Years</option>
+                  </select>
+                </div>
+
+                <div id="taxYearContainer<?= sectionNum ?>" class="control-group hidden">
+                  <label class="control-label">Tax Year</label>
+                  <select id="taxYear<?= sectionNum ?>" class="control-input">
+                    <? 
+                      const getYearRange = () => {
+                        const startYear = 2022;
+                        const currentYear = new Date().getFullYear();
+                        const years = [];
+
+                        for (let year = currentYear; year >= startYear; year--) {
+                          years.push(year);
+                        }
+
+                        return years;
+                      }
+
+                      [2022].map((startYear) => {
+                        const today = new Date();
+                        const currentYear = today.getFullYear();
+                        const taxYearStart = new Date(currentYear, 3, 6);
+                        const fromYear = (today < taxYearStart) ? currentYear - 1 : currentYear;
+                        const years = [];
+
+                        for (let year = fromYear; year >= startYear; year--) {
+                          years.push(year);
+                        }
+
+                        return years;
+                      })
+                      .flat()
+                      .map(year => `${year-2001}/${year-2000}`)
+                      .forEach(taxYear => {
+                    ?>
+                      <option value="<?= taxYear ?>"><?= taxYear ?></option>
+                    <? }); ?>
+                  </select>
+                </div>
+
+                <div id="dateSameAsContainer<?= sectionNum ?>" class="control-group hidden">
+                  <label class="control-label">Date same as</label>
+                  <select id="dateSameAs<?= sectionNum ?>" class="control-input">
+                    <? 
+                      [1, 2, 3, 4]
+                        .forEach((optionNum) => { 
+                          if (optionNum !== sectionNum) {
+                    ?>
+                    <option value="<?= optionNum ?>">Chart <?= optionNum ?></option>
+                    <? }
+                    }); ?>
+                  </select>
+                </div>
+              </div>
+
+              <div class="pill-container pill-1">
+                <div class="control-group">
+                  <label class="control-label">Data Set</label>
+                  <select id="dataSetMode<?= sectionNum ?>" class="control-input" onchange="handleDataSetModeChange(<?= sectionNum ?>, this.value)">
+                    <option value="defined">By line</option>
+                    <option value="same-as">Same as</option>
+                  </select>
+                </div>
+                
+                <div id="dataSetSameAsContainer<?= sectionNum ?>" class="control-group hidden">
+                  <label class="control-label">Data set same as</label>
+                  <select id="dataSetSameAs<?= sectionNum ?>" class="control-input">
+                    <? 
+                      [1, 2, 3, 4]
+                        .forEach((optionNum) => { 
+                          if (optionNum !== sectionNum) {
+                    ?>
+                    <option value="<?= optionNum ?>">Chart <?= optionNum ?></option>
+                    <? }
+                    }); ?>
+                  </select>
+                </div>
               </div>
 
               <? 
                 [1, 2, 3, 4]
                   .forEach((lineNum) => { 
               ?>
-                <div id="dataSetLineModeContainer<?= sectionNum ?><?= lineNum ?>" class="control-group">
-                  <label class="control-label">Line <?= lineNum ?></label>
-                  <select id="dataSetLineMode<?= sectionNum ?><?= lineNum ?>" class="control-input" onchange="handleDataSetLineModeChange(<?= sectionNum ?>, <?= lineNum ?>, this.value)">
-                    <option value="all">All</option>
-                    <option value="account">Account</option>
-                    <option value="symbol">Symbol</option>
-                  </select>
-                </div>
-
-                <div id="accountContainer<?= sectionNum ?><?= lineNum ?>" class="control-group hidden">
-                  <label class="control-label">Select Account</label>
-                  <select id="account<?= sectionNum ?><?= lineNum ?>" class="control-input">
-                      <!-- options added dynamically on load -->
-                  </select>
-                </div>
-
-                <div id="symbolContainer<?= sectionNum ?><?= lineNum ?>" class="control-group hidden">
-                  <label class="control-label">Symbols</label>
-                  <div class="symbol-picker-wrapper">
-                    <select id="symbolSearch<?= sectionNum ?><?= lineNum ?>" class="control-input" onfocus="populateSymbols(<?= sectionNum ?>, <?= lineNum ?>)" onchange="addSymbolTag(<?= sectionNum ?>, <?= lineNum ?>, this.value)">
-                      <option value="">Select symbols...</option>
+                <div id="definedLineContainer<?= sectionNum ?><?= lineNum ?>" class="pill-container pill-<?= lineNum ?>">
+                  <div id="dataSetLineModeContainer<?= sectionNum ?><?= lineNum ?>" class="control-group">
+                    <label class="control-label">Line <?= lineNum ?></label>
+                    <select id="dataSetLineMode<?= sectionNum ?><?= lineNum ?>" class="control-input" onchange="handleDataSetLineModeChange(<?= sectionNum ?>, <?= lineNum ?>, this.value)">
+                      <option value="all">All</option>
+                      <option value="account">Account</option>
+                      <option value="holding">Holding value of</option>
                     </select>
-                    <div id="symbols<?= sectionNum ?><?= lineNum ?>" class="tag-cloud"></div>
+                  </div>
+
+                  <div id="accountContainer<?= sectionNum ?><?= lineNum ?>" class="control-group hidden">
+                    <label class="control-label">Select Account</label>
+                    <select id="account<?= sectionNum ?><?= lineNum ?>" class="control-input">
+                        <!-- options added dynamically on load -->
+                    </select>
+                  </div>
+
+                  <div id="symbolContainer<?= sectionNum ?><?= lineNum ?>" class="control-group hidden">
+                    <label class="control-label">Symbols</label>
+                    <div class="symbol-picker-wrapper">
+                      <select id="symbolSearch<?= sectionNum ?><?= lineNum ?>" class="control-input" onfocus="populateSymbols(<?= sectionNum ?>, <?= lineNum ?>)" onchange="addSymbolTag(<?= sectionNum ?>, <?= lineNum ?>, this.value)">
+                        <option value="">Select symbols...</option>
+                      </select>
+                      <div id="symbols<?= sectionNum ?><?= lineNum ?>" class="tag-cloud"></div>
+                    </div>
                   </div>
                 </div>
-
                <? }); ?>
 
             </div>

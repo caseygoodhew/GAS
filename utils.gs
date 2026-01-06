@@ -483,3 +483,8 @@ const colorArray = (startHex, dimBy, size) => {
   return colors;
 }
 
+const clone = (value) => {
+  const str = JSON.stringify({ value });
+  return JSON.parse(str).value;
+}
+
