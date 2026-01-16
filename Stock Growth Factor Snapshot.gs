@@ -1,8 +1,3 @@
-const testStockGrowthFactorSnapshotSheet = () => {
-  const headings = stockGrowthFactorSnapshotSheet().getFactorLabels();
-  const aaa = 0;
-}
-
 const refreshStockGrowthFactorSnapshotSheet = () => {
   stockGrowthFactorSnapshotSheet().refresh();
 }
@@ -79,16 +74,19 @@ const stockGrowthFactorSnapshotSheet = () => {
         const perf = performanceStats().start();
         const currency = symbolCurrencyMap[symbol];
         
-        const quantity = Math.min(
+        let quantity = Math.min(
           csthSheet.getHoldingQuantityAsOf(symbol, opening),
           csthSheet.getHoldingQuantityAsOf(symbol, closing)
         );
+        
+        if (quantity > 0 && quantity < 0.001) { 
+          quantity = 0;
+        }
         
         const openingPrice = stockPriceReader.getPriceOn(symbol, opening);
         const closingPrice = stockPriceReader.getPriceOn(symbol, closing);
 
         if (index1 > 0) { perfStats.push(perf.check().value) }
-
         const openingValue = (quantity * openingPrice);
         const closingValue = (quantity * closingPrice);
 
@@ -194,7 +192,10 @@ const stockGrowthFactorSnapshotSheet = () => {
         
         groups[key].openingValue += (item.openingValue * exchangeRate);
         groups[key].valueChange += (item.valueChange * exchangeRate);
-        groups[key].factor = groups[key].openingValue === 0 ? 0 : (groups[key].valueChange * 1000) / groups[key].openingValue;
+        groups[key].factor = calculateFactor(
+          groups[key].openingValue, 
+          groups[key].valueChange
+        );
 
         return groups;
 
@@ -204,6 +205,16 @@ const stockGrowthFactorSnapshotSheet = () => {
     });
 
     return { ...metadata, keys: allKeys, items: grouped };
+  }
+
+  const calculateFactor = (_opening, _change) => {
+    const opening = isArray(_opening) ? sumOf(_opening) : _opening;
+    const change = isArray(_change) ? sumOf(_change) : _change;
+    
+    if (opening === 0) { 
+      return 0;
+    }
+    return (change * 1000) / opening;
   }
 
   /****************************************
@@ -254,6 +265,65 @@ const stockGrowthFactorSnapshotSheet = () => {
     executionTime: 'elapsedTimeCell' 
   });
 
+  let memoizedFastFindData;
+  const getFastFindData = () => {
+    if (memoizedFastFindData) {
+      return memoizedFastFindData;
+    }
+
+    const data = helper.getRange(
+      topLeftPosition.col, 
+      topLeftPosition.row, 
+      helper.getLastColumn(), 
+      helper.getLastRow(), 
+    ).getValues();
+
+    
+    const allHeaders = pivotArray(data.splice(0, 3));
+    const remapHeaders = [
+      'Date', 
+      'All', 
+      'Account', 
+      'Currency', 
+      'Symbol', 
+      'Factor', 
+      'Opening', 
+      'Change'
+    ].reduce(
+      // default to to remap to lower case variant
+      (acc, header) => ({...acc, [header]: header.toLowerCase()}), 
+      // we want to skip this one entirely
+      { 'All (in GBP)': '' }
+    );
+
+    const keyStruct = allHeaders.map((colHeaders) => {
+      return colHeaders.reduce((acc, header) => {
+        const key = remapHeaders[header] ?? header;
+        if (key) {
+          return [...acc, key];
+        }
+        return acc;
+      }, []);
+    });
+
+    const result = data.map(values => {
+      return values.reduce((acc, value, index) => {
+        const keys = keyStruct[index];
+        let pointer = acc;
+        for (let i = 0; i < keys.length; i++) {
+          pointer[keys[i]] = pointer[keys[i]] || {};
+          if (i < keys.length - 1) {
+            pointer = pointer[keys[i]];
+          }
+        }
+        pointer[keys[keys.length - 1]] = (isString(value) && !value) ? 0 : value;
+        return acc;
+      }, {});
+    })
+    
+    memoizedFastFindData = initFastFind(result, 'DESC');
+    return memoizedFastFindData;
+  }
   
   const funcs = {
     getFactorLabels: () => {
@@ -288,6 +358,20 @@ const stockGrowthFactorSnapshotSheet = () => {
 
         return acc;
       }, {});
+    },
+
+    getDataOn: (date) => {
+      const finder = getFastFindData();
+      // As factors are used for accumulation, the sheet will not provide data for days where no readings
+      // are available (i.e. due to recency or non-trading day)
+      return finder(date, 0.5);
+    },
+
+    calculateFactor: (deltas) => {
+      return calculateFactor(
+        deltas.map(item => item.opening),
+        deltas.map(item => item.change)
+      );
     },
     
     refresh: () => {

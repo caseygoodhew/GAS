@@ -368,7 +368,7 @@ const initFastFind = (data, sortDir) => {
     }
   })
 
-  const exec = (date) => {
+  const exec = (date, toleranceDays) => {
     if (data.length === 0) {
       return null;
     }
@@ -398,6 +398,10 @@ const initFastFind = (data, sortDir) => {
       if (closest == null || data[i].date > closest.date) {
         closest = data[i];
       }
+    }
+
+    if (toleranceDays != null && closest.date < addDays(date, -toleranceDays)) {
+      return null;
     }
 
     return closest;
@@ -486,5 +490,9 @@ const colorArray = (startHex, dimBy, size) => {
 const clone = (value) => {
   const str = JSON.stringify({ value });
   return JSON.parse(str).value;
+}
+
+const sumOf = (numbers) => {
+  return numbers.reduce((sum, num) => sum + num, 0);
 }
 

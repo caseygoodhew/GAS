@@ -3,7 +3,10 @@ const testTransformIOCConfiguration = () => {
   //sample[0].dateRangeMode = 'same-as';
   const result = transformIOCConfiguration().transform(sample);
   const actual = JSON.stringify(result);
-return;
+
+/* THIS FALLS OVER WHEN WE CHANGE THE SAMPLE DATA - NEEDS A BETTER WAY TO TEST
+
+
   // Sheets and JSON stringify seem to serialize TZ differently, so 17:00 is ok in this check
   const expected = JSON.stringify([
     {
@@ -26,7 +29,7 @@ return;
 
   if (actual !== expected) {
     throw new Error(`Actual and expected DO NOT MATCH`)
-  }
+  }*/
 }
 
 const transformIOCConfiguration = () => {

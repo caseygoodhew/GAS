@@ -1,3 +1,11 @@
+const testIOCSetCurrentConfiguration = () => {
+  const data = getIOCCurrentConfiguration();
+  
+  investmentOverviewChartsSheet().updateCharts(
+    transformIOCConfiguration().transform(data)
+  );
+}
+
 const testIOCGetFactorConfigs = () => {
   const result = getIOCFactorConfigs();
   const aaa = 0;

@@ -1,3 +1,7 @@
+const testLocalIOCSetCurrentConfiguration = () => {
+  testIOCSetCurrentConfiguration();
+};
+
 const testOnTimePeriodChange = () => {
   const helper = makeHelper(investmentOverviewChartsSheet().getSheetName());
   investmentOverviewChartsSheet().onTimePeriodChange({range: helper.getRange('D', 5)});
@@ -13,16 +17,13 @@ const investmentOverviewChartsSheet = () => {
   const INVESTMENT_OVERVIEW_CHARTS_SHEETNAME = 'Investment Overview Charts';
   const helper = makeHelper(INVESTMENT_OVERVIEW_CHARTS_SHEETNAME);
   const [magicCoordinates] = initMagicCoordinates(helper.getRange(1, 1, 2, 100), { 
-    dateRangeStart: 'dateRangeStart',
-    /*periodPicker: 'periodPicker',
-    startDate: 'startDate',
-    endDate: 'endDate',*/
+    chartDataTopLeft: 'chartDataTopLeft',
     currentChartConfig: 'currentChartConfig',
     chartConfigPresets: 'chartConfigPresets'
   });
 
   const {
-    dateRangeStart,
+    chartDataTopLeft,
     currentChartConfig,
     chartConfigPresets
   } = magicCoordinates;
@@ -72,11 +73,79 @@ const investmentOverviewChartsSheet = () => {
       return memoizedConfiguration;
     },
     updateCharts: data => {
-      const dateValues = pivotArray(data.map(item => [item.startDate, item.endDate]));
+      /*. this writes the dates in place - not sure if this will stay or not */
+      //const dateValues = pivotArray(data.map(item => [item.startDate, item.endDate]));
+      //helper.getRangeBySize(dateRangeStart.col, dateRangeStart.row, 4, 2).setValues(dateValues);
 
-      //throw new Error(JSON.stringify(data, undefined, 2))
+      const sets = data.map(({startDate, endDate, data: lines}) => {
+        const minDate = Math.min(startDate, endDate);
+        const maxDate = Math.max(startDate, endDate);
 
-      helper.getRangeBySize(dateRangeStart.col, dateRangeStart.row, 4, 2).setValues(dateValues);
+        const dateRange = [];
+        for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
+          // as this is an accumulation chart, the sheet will not provide data for days where no readings
+          // are available (i.e. due to recency or non-trading day)
+          if (stockGrowthFactorSnapshotSheet().getDataOn(d)) {
+            dateRange.push(new Date(d));
+          }
+        }
+
+        const lineData = lines.map(line => {
+          switch (line.mode) {
+            case 'all':
+              return { 
+                description: 'All (in GBP)',
+                data: dateRange.map(date => {
+                  const item = stockGrowthFactorSnapshotSheet().getDataOn(date);
+                  return item.all.factor;
+                })
+              };
+            case 'account':
+              return {
+                description: line.account,
+                data: dateRange.map(date => {
+                  const item = stockGrowthFactorSnapshotSheet().getDataOn(date);
+                  return item.account[line.account].factor;
+                })
+              };
+            case 'holding':
+              return {
+                description: line.symbols.join(','),
+                data: dateRange.map(date => {
+                  const item = stockGrowthFactorSnapshotSheet().getDataOn(date);
+                  
+                  return stockGrowthFactorSnapshotSheet().calculateFactor(
+                    line.symbols.map(symbol => item.symbol[symbol])
+                  )
+                })
+              };
+            default:
+              throw new Error(`Error updating charts - unknown data mode "${line.mode}"`);
+          }
+        });
+
+        const one = lineData.map(x => {
+          let currentSum = 0;
+          return [
+            0, 
+            ...x.data.slice(1).map(value => (currentSum += value)/10)
+          ]
+        });
+
+        const two = [dateRange, ...one];
+        const three = pivotArray(two);
+        const four = [['Date', ...lineData.map(x => x.description)], ...three];
+
+        return four;
+      });
+
+      const firstCol = chartDataTopLeft.col;
+      const firstRow = chartDataTopLeft.row;
+      helper.getRange(firstCol, firstRow, helper.getLastColumn(), helper.getLastRow()).clearContent();
+      
+      sets.forEach((out, index) => {
+        helper.getRangeBySize(firstCol + (index * 6), firstRow, out[0].length, out.length).setValues(out);
+      });
     },
     onTimePeriodChange: ({range}) => {
       throw new Error('check if onTimePeriodChange should be deprecated')
