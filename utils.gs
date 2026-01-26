@@ -98,6 +98,10 @@ const toColNumber = (colLetter) => {
     throw new Error(`Expected colLetter to be a string, got (${colLetter})`);
   }
 
+  if (/[0-9]+/i.test(colLetter)) { 
+    return parseInt(colLetter);
+  }
+
   if (!/[A-Z]+/i.test(colLetter)) {
     throw new Error(`Expected colLetter to be a column letter only, got (${colLetter})`);
   }
@@ -329,6 +333,10 @@ const addMonths = (valueOrCell, months) => {
   return newDate;
 };
 
+const addYears = (valueOrCell, years) => {
+  return addMonths(valueOrCell, years * 12);
+}
+
 const getDaysBetweenDates = (date1, date2) => {
   // Define the number of milliseconds in one day
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -495,4 +503,21 @@ const clone = (value) => {
 const sumOf = (numbers) => {
   return numbers.reduce((sum, num) => sum + num, 0);
 }
+
+const toTitleCase = (str) => {
+  if (!isString(str)) {
+    throw new Error(`Expected str to be a string, got (${typeof hex})`)
+  }
+  
+  if (!str) return '';
+
+  return str
+    .replace(/_/g, ' ')
+    .split(' ')
+    .filter((word) => word.length > 0) // Handles multiple spaces or underscores
+    .map((word) => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(' ');
+};
 

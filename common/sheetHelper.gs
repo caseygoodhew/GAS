@@ -296,6 +296,110 @@ const makeHelper = (sheet, labeledColumnMap) => {
       }
 
       return values;
+    },
+
+    getFirstVisibleRow: () => {
+      const maxRows = fns.getMaxRows();
+      for (let i = 1; i <= maxRows; i++) {
+        if (!sheet.isRowHiddenByUser(i)) return i;
+      }
+      return null;
+    },
+
+    getLastVisibleRow: () => {
+      const maxRows = fns.getMaxRows();
+      for (let i = maxRows; i >= 1; i--) {
+        if (!sheet.isRowHiddenByUser(i)) return i;
+      }
+      return null;
+    },
+
+    getFirstVisibleCol: () => {
+      const maxCols = fns.getMaxColumns();
+      for (let i = 1; i <= maxCols; i++) {
+        if (!sheet.isColumnHiddenByUser(i)) return i;
+      }
+      return null;
+    },
+
+    getLastVisibleCol: () => {
+      const maxCols = fns.getMaxColumns();
+      for (let i = maxCols; i >= 1; i--) {
+        if (!sheet.isColumnHiddenByUser(i)) return i;
+      }
+      return null;
+    },
+
+    /**
+     * Pads the active sheet if the boundary is not empty.
+     * Adjusts insertion point if inner bounds are hidden.
+     * @param {string} padding - String containing 't', 'l', 'b', or 'r'.
+     */
+    padSheet: (padding) => {
+      const p = padding.toLowerCase();
+
+      const maxRows = sheet.getMaxRows();
+      const maxCols = sheet.getMaxColumns();
+
+      // 1. Top Padding
+      if (p.includes('t')) {
+        const target = fns.getFirstVisibleRow();
+        if (target && !sheet.getRange(target, 1, 1, maxCols).isBlank()) {
+          sheet.insertRowBefore(target);
+        }
+      }
+
+      // 2. Left Padding
+      if (p.includes('l')) {
+        const target = fns.getFirstVisibleCol();
+        if (target && !sheet.getRange(1, target, maxRows, 1).isBlank()) {
+          sheet.insertColumnBefore(target);
+        }
+      }
+
+      // 3. Bottom Padding
+      if (p.includes('b')) {
+        const target = fns.getLastVisibleRow();
+        if (target && !sheet.getRange(target, 1, 1, maxCols).isBlank()) {
+          sheet.insertRowAfter(target);
+        }
+      }
+
+      // 4. Right Padding
+      if (p.includes('r')) {
+        const target = fns.getLastVisibleCol();
+        if (target && !sheet.getRange(1, target, maxRows, 1).isBlank()) {
+          sheet.insertColumnAfter(target);
+        }
+      }
+    },
+
+    resetSheet: () => {
+      // 1. Clear all data, formatting, and validation
+      sheet.clear();
+
+      const maxRows = sheet.getMaxRows();
+      const maxCols = sheet.getMaxColumns();
+      
+      // 2. Remove all merged cells
+      const range = sheet.getRange(1, 1, maxRows, maxCols);
+      range.breakApart();
+
+      // 3. Reset Column Widths and Row Heights to defaults
+      // There is no single "reset" command for this, so we set them to standard values
+      for (let i = 1; i <= maxCols; i++) {
+        sheet.setColumnWidth(i, 100); // Standard Google Sheets width is 100px
+      }
+      
+      for (let j = 1; j <= maxRows; j++) {
+        sheet.setRowHeight(j, 21); // Standard row height is 21px
+      }
+
+      // 4. Reset Filters and Slicers if they exist
+      const filter = sheet.getFilter();
+      if (filter) {
+        filter.remove();
+      }
     }
   };
 
