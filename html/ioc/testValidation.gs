@@ -101,6 +101,14 @@ function testIOCConfigurationValidation() {
   runDataTest('[defined][symbol] Unknown symbol', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: ['FOO'] }] }], ERROR, 1);
   runDataTest('[defined][symbol] Unknown symbols', [{ dataSetMode: 'defined', lines: [{ dataSetLineMode: 'holding', symbols: ['FOO', 'BAR'] }] }], ERROR, 2);
 
+  runDataTest('[performance] OK by top, none', [{ dataSetMode: 'performance', byPerformance: 'top', performanceFilter: 'none' }], OK);
+  runDataTest('[performance] OK by bottom, none', [{ dataSetMode: 'performance', byPerformance: 'bottom', performanceFilter: 'none' }], OK);
+  runDataTest('[performance] OK by top, CHARLES_SCHWAB', [{ dataSetMode: 'performance', byPerformance: 'top', performanceFilter: 'CHARLES_SCHWAB' }], OK);
+  runDataTest('[performance] Missing byPerformance', [{ dataSetMode: 'performance', performanceFilter: 'none' }], ERROR, 1);
+  runDataTest('[performance] Missing performanceFilter', [{ dataSetMode: 'performance', byPerformance: 'top' }], ERROR, 1);
+  runDataTest('[performance] Invalid byPerformance', [{ dataSetMode: 'performance', byPerformance: 'INVALID', performanceFilter: 'none' }], ERROR, 1);
+  runDataTest('[performance] Invalid performanceFilter', [{ dataSetMode: 'performance', byPerformance: 'top', performanceFilter: 'INVALID' }], ERROR, 1);
+  
   runDataTest('[same-as] OK', [{ dataSetMode: 'same-as', dataSetSameAs: '2' }], OK);
   runDataTest('[same-as] Empty date same as', [{ dataSetMode: 'same-as' }], ERROR, 1);
   runDataTest('[same-as] Empty date same as', [{ dataSetMode: 'same-as', dataSetSameAs: 'A' }], ERROR, 1);

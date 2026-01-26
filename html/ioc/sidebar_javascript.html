@@ -246,6 +246,8 @@ const getFields = () => {
           handleDataSetModeChange(secNum, value);
         }
       },
+      'byPerformance': {},
+      'performanceFilter': {},
       'dataSetSameAs': {}
     }, 
     byLine: {
@@ -435,6 +437,8 @@ const storeSymbols = (symbols) => {
 
 const handleDataSetModeChange = (secNum, mode) => {
   const dataSetSameAsContainer = document.getElementById(`dataSetSameAsContainer${secNum}`);
+  const byPerformanceContainer = document.getElementById(`byPerformanceContainer${secNum}`);
+
   const dataSetLineModeContainers = [1, 2, 3, 4].map(lineNum => ({
     pillContainer: document.getElementById(`definedLineContainer${secNum}${lineNum}`),
     container: document.getElementById(`dataSetLineModeContainer${secNum}${lineNum}`),
@@ -443,8 +447,10 @@ const handleDataSetModeChange = (secNum, mode) => {
   }));
   
 
-  // Hide both by default, then selectively show
+  // Hide all by default, then selectively show
   dataSetSameAsContainer.classList.add('hidden');
+  byPerformanceContainer.classList.add('hidden');
+  
   dataSetLineModeContainers.forEach(({pillContainer, container, lineNum}) => {
     pillContainer.classList.add('hidden');
     container.classList.add('hidden');
@@ -457,6 +463,8 @@ const handleDataSetModeChange = (secNum, mode) => {
       container.classList.remove('hidden');
       handleDataSetLineModeChange(secNum, lineNum, field.value)
     });
+  } else if (mode === 'performance') {
+    byPerformanceContainer.classList.remove('hidden');
   } else if (mode === 'same-as') {
     dataSetSameAsContainer.classList.remove('hidden');
   }
@@ -490,6 +498,15 @@ const setAccountPickerOptions = (accounts) => {
       const options = accountKeys.map(key => `<option value="${key}">${accounts[key]}</option>`);
       dropdown.innerHTML = options.join('');
     });
+
+    const dropdown = document.getElementById(`performanceFilter${secNum}`);
+    const options = [
+      { key: 'none', value: 'None' }, 
+      ...accountKeys.map(key => ({ key, value: accounts[key]}))
+    ].map(
+      ({key, value}) => `<option value="${key}">${value}</option>`
+    );
+    dropdown.innerHTML = options.join('');
   });
 }
 

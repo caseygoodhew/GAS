@@ -1,7 +1,7 @@
 const testCombinedStockTransactionHistorySheet = () => {
   //const result = getCombinedStockTransactionHistorySheet().getHoldingQuantityAsOf('META', new Date(2025, 8, 11));
-  const result = getCombinedStockTransactionHistorySheet().getSymbols()
-
+  const result = getCombinedStockTransactionHistorySheet().getAccountSymbolMap()
+//getCombinedStockTransactionHistorySheet().getAccountSymbolMap()
   const aaa = 0;
 }
 
@@ -64,7 +64,20 @@ const getCombinedStockTransactionHistorySheet = () => {
     getSymbols: () => {
       return [...funcs.getData().symbols]
     },
-    getAccountSymbolMap: () => {
+    
+    // creates a map/reverse map of symbols and accounts
+    ACCOUNTS: 'ACCOUNTS',
+    SYMBOLS: 'SYMBOLS',
+    BOTH: 'BOTH',
+    getAccountSymbolMap: (type = 'BOTH') => {
+
+      const validTypes = [funcs.ACCOUNTS, funcs.SYMBOLS, funcs.BOTH];
+      if (!validTypes.includes(type)) {
+        throw new Error(`Unknown type ${type} in CombinedStockTransactionHistorySheet.getAccountSymbolMap`)
+      }
+      const includeAccounts = type !== funcs.SYMBOLS;
+      const includeSymbols = type !== funcs.ACCOUNTS;
+      
       // This fn may not be optimized
       const {SYMBOL,ACCOUNT} = funcs.getColumns();
       const data = funcs.getData().all;
@@ -78,15 +91,18 @@ const getCombinedStockTransactionHistorySheet = () => {
           return acc;
         }
 
-        acc[item[SYMBOL]] = acc[item[SYMBOL]] || [];
-        acc[item[ACCOUNT]] = acc[item[ACCOUNT]] || [];
-
-        if (!acc[item[SYMBOL]].includes(item[ACCOUNT])) {
-          acc[item[SYMBOL]].push(item[ACCOUNT]);
+        if (includeSymbols) {
+          acc[item[SYMBOL]] = acc[item[SYMBOL]] || [];
+          if (!acc[item[SYMBOL]].includes(item[ACCOUNT])) {
+            acc[item[SYMBOL]].push(item[ACCOUNT]);
+          }
         }
 
-        if (!acc[item[ACCOUNT]].includes(item[SYMBOL])) {
-          acc[item[ACCOUNT]].push(item[SYMBOL])
+        if (includeAccounts) {
+          acc[item[ACCOUNT]] = acc[item[ACCOUNT]] || [];
+          if (!acc[item[ACCOUNT]].includes(item[SYMBOL])) {
+            acc[item[ACCOUNT]].push(item[SYMBOL])
+          }
         }
 
         return acc;

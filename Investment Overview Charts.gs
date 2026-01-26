@@ -49,6 +49,61 @@ const investmentOverviewChartsSheet = () => {
     }
   }
 
+  let memoizedRanking = {};
+  const getMemoizedRanking = (dateRange, line) => {
+    const memoKey = [
+      dateRange[0].toString(), 
+      dateRange[dateRange.length - 1].toString(),
+      line.limit
+    ].join('|');
+
+    if (memoizedRanking[memoKey]) {
+      return [...memoizedRanking[memoKey]];
+    }
+      
+    /** GET THE SYMBOLS TO BE RANKED **/
+    const symbols = ((limit) => {
+      switch (limit) {
+        case 'all':
+          return Object.keys((getCombinedStockTransactionHistorySheet().getAccountSymbolMap(
+            getCombinedStockTransactionHistorySheet().SYMBOLS
+          )));
+        default:
+          // the only other option (for now) is that this is an account
+          return getCombinedStockTransactionHistorySheet().getAccountSymbolMap(
+            getCombinedStockTransactionHistorySheet().ACCOUNTS
+          )[limit];
+      }
+    })(line.limit);
+
+    /** DO THE RANKING **/
+    const map = symbols.reduce((acc, symbol) => ({ ...acc, [symbol]: 0 }), {});
+    dateRange.forEach((date, index) => {
+      if (index === 0) {
+        return;
+      }
+
+      const item = stockGrowthFactorSnapshotSheet().getDataOn(date);
+      
+      symbols.forEach(symbol => {
+        const factor = stockGrowthFactorSnapshotSheet().calculateFactor(
+          [item.symbol[symbol]]
+        )
+
+        map[symbol] += factor;
+      })
+    })
+
+    const ranked = symbols
+      // if it's exactly 0, we can 
+      .filter(symbol => map[symbol] !== 0)
+      .map((symbol => ({ symbol, value: map[symbol] })))
+      .sort((a, b) => b.value - a.value);
+
+    memoizedRanking[memoKey] = ranked;
+    return [...ranked];
+  }
+
   let memoizedConfiguration;
 
   const funcs = {
@@ -78,8 +133,8 @@ const investmentOverviewChartsSheet = () => {
       //helper.getRangeBySize(dateRangeStart.col, dateRangeStart.row, 4, 2).setValues(dateValues);
 
       const sets = data.map(({startDate, endDate, data: lines}) => {
-        const minDate = Math.min(startDate, endDate);
-        const maxDate = Math.max(startDate, endDate);
+        const minDate = Math.min(new Date(startDate), new Date(endDate));
+        const maxDate = Math.max(new Date(startDate), new Date(endDate));
 
         const dateRange = [];
         for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
@@ -88,6 +143,9 @@ const investmentOverviewChartsSheet = () => {
           if (stockGrowthFactorSnapshotSheet().getDataOn(d)) {
             dateRange.push(new Date(d));
           }
+        }
+        if (!dateRange.length) {
+          debugger;
         }
 
         const lineData = lines.map(line => {
@@ -119,6 +177,24 @@ const investmentOverviewChartsSheet = () => {
                   )
                 })
               };
+            case 'performance':
+              const ranked = getMemoizedRanking(dateRange, line);
+              if (line.ordinance === 'bottom') {
+                ranked.reverse();
+              }
+              
+              const rankedSymbols = ranked.slice(0, 4).map(x => x.symbol);
+
+              return {
+                description: rankedSymbols[line.rank - 1],
+                data: dateRange.map(date => {
+                  const item = stockGrowthFactorSnapshotSheet().getDataOn(date);
+                  
+                  return stockGrowthFactorSnapshotSheet().calculateFactor(
+                    [item.symbol[rankedSymbols[line.rank - 1]]]
+                  )
+                })
+              }; 
             default:
               throw new Error(`Error updating charts - unknown data mode "${line.mode}"`);
           }

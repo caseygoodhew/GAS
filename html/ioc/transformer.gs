@@ -168,6 +168,23 @@ const transformIOCConfiguration = () => {
           data: item.lines.map(line => calculateDataSetLine(line))
         }
 
+      case 'performance':
+        const limit = item.performanceFilter === 'none' ? 'all' : item.performanceFilter; 
+        const ordinance = item.byPerformance;
+        const rank = [1, 2, 3, 4];
+        if (ordinance === 'bottom') {
+          rank.reverse();
+        }
+        
+        return {
+          data: rank.map(rank => ({
+            mode: 'performance',
+            ordinance,
+            rank,
+            limit
+          }))
+        }
+
       case 'same-as':
         const index = parseInt(item.dataSetSameAs, 10) - 1;
         if (others[index]) {

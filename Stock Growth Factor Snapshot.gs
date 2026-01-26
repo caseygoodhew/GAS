@@ -15,7 +15,7 @@ const stockGrowthFactorSnapshotSheet = () => {
     const csthSheet = getCombinedStockTransactionHistorySheet();
     const symbols = csthSheet.getSymbols();
     const accounts = Object.values(csthSheet.getConstants().accounts);
-    const result = csthSheet.getAccountSymbolMap();
+    const result = csthSheet.getAccountSymbolBidirectionalMap();
 
     return Object.keys(result).reduce((acc, key) => {
       if (accounts.includes(key)) {

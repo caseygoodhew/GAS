@@ -46,3 +46,35 @@ const initLabelledColumns = (sheet, expectedLabels) => {
     headingMap: colHeadingsMap
   };
 }
+
+const defineLabelledColumns = (firstColNumOrLetter, columns) => {
+  const start = toColNumber(firstColNumOrLetter);
+
+  const colLabelToNumMap = {};
+  const colNumToLabelMap = {};
+  const colHeadingsMap = {};
+
+  columns.forEach((key, index) => {
+    colLabelToNumMap[key] = index + start;
+    colNumToLabelMap[index + start] = key;
+    colHeadingsMap[key] = key;
+  });
+
+  const columnIndicies = Object.values(colLabelToNumMap);
+
+  return columns.reduce((acc, col) => ({ ...acc, [col]: col }), {
+    colNumToLabelMap,
+    colLabelToNumMap,
+    keys: [...columns],
+    first: Math.min(...columnIndicies),
+    last: Math.max(...columnIndicies),
+    headingMap: colHeadingsMap
+  });
+}
+
+
+
+
+
+
+

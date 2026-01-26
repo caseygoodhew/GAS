@@ -132,6 +132,7 @@
                   <label class="control-label">Data Set</label>
                   <select id="dataSetMode<?= sectionNum ?>" class="control-input" onchange="handleDataSetModeChange(<?= sectionNum ?>, this.value)">
                     <option value="defined">By line</option>
+                    <option value="performance">By performance</option>
                     <option value="same-as">Same as</option>
                   </select>
                 </div>
@@ -148,6 +149,23 @@
                     <? }
                     }); ?>
                   </select>
+                </div>
+
+                <div id="byPerformanceContainer<?= sectionNum ?>" class="hidden">
+                  <div class="control-group">
+                    <label class="control-label">Criteria</label>
+                    <select id="byPerformance<?= sectionNum ?>" class="control-input">
+                      <option value="top">Top performers</option>
+                      <option value="bottom">Bottom performers</option>
+                    </select>
+                  </div>
+
+                  <div class="control-group">
+                    <label class="control-label">Limit to</label>
+                    <select id="performanceFilter<?= sectionNum ?>" class="control-input">
+                      <!-- options dynamically generated -->
+                    </select>
+                  </div>
                 </div>
               </div>
 

@@ -100,8 +100,13 @@ const iocConfigurationValidator = () => {
           item.lines.forEach((line, index) => funcs.validateOneLineData(line, { ...context, lineNum: index + 1 }));
           break;
         
+        case 'performance':
+          funcs.validateByPerformance(item, context);
+          funcs.validatePerformanceFilter(item, context);
+          break;
+        
         case 'same-as':
-          funcs.validateDataSetSameAs(item, context)
+          funcs.validateDataSetSameAs(item, context);
           break;
         
         default:
@@ -179,6 +184,35 @@ const iocConfigurationValidator = () => {
         ...context,
         level: WARN,
         message: `Start date (${item.startDate}) is later than end date (${item.endDate}) - this has been corrected in the chart`
+      });
+    },
+
+    validateByPerformance: (item, context) => {
+      const value = item.byPerformance;
+      const expectedPerformances = ['top', 'bottom'];
+
+      validationResult.record(
+        expectedPerformances.includes(value), {
+        ...context,
+        prop: 'byPerformance',
+        level: ERROR,
+        message: `Unexpected value for byPerformance (${value}) - expected one of ['${expectedPerformances.join("', '")}']`
+      });
+    },
+
+    validatePerformanceFilter: (item, context) => {
+      const value = item.performanceFilter;
+      
+      const knownAccounts = getGlobalsSheet().getAccounts();
+      const validKeys = ['none', ...Object.keys(knownAccounts)];
+
+      const result = validKeys.includes(value);
+
+      validationResult.record(result, {
+        ...context,
+        prop: 'performanceFilter',
+        level: ERROR,
+        message: `Unexpected value for performanceFilter (${value}) - expected one of ['${validKeys.join("', '")}']`
       });
     },
 
@@ -333,7 +367,7 @@ const iocConfigurationValidator = () => {
         ...context,
         prop: 'account',
         level: ERROR,
-        message: `Unexpected value for account (${account}) - expected one of [${knownAccountKeys.join(', ')}]`
+        message: `Unexpected value for account (${account}) - expected one of ['${knownAccountKeys.join("', '")}']`
       });
     },
 
