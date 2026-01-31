@@ -147,6 +147,10 @@ const makeHelper = (sheet, labeledColumnMap) => {
       )
     },
 
+    getRangeFromA1: (a1Notation) => {
+      return sheet.getRange(a1Notation);
+    },
+
     getCell: (col, row) => {
       const range = fns.getRange(col, row);
       return range.getCell(1, 1);
@@ -399,6 +403,19 @@ const makeHelper = (sheet, labeledColumnMap) => {
       const filter = sheet.getFilter();
       if (filter) {
         filter.remove();
+      }
+
+      sheet.setFrozenRows(0);
+      sheet.setFrozenColumns(0);
+    },
+
+    freezeView: (rows, cols) => {
+      if (isNumber(rows)) {
+        sheet.setFrozenRows(rows);
+      }
+      
+      if (isNumber(cols)) {
+        sheet.setFrozenColumns(cols);
       }
     }
   };

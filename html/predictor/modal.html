@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= include('html/predictor/modal_stylesheet'); ?>
+  </head>
+  <body>
+
+    <nav class="tabs">
+      <button class="tab-link" onclick="openTab(event, 'tab-compare')">Compare</button>
+      <button class="tab-link" onclick="openTab(event, 'tab-create')">Create</button>
+      <button class="tab-link active" onclick="openTab(event, 'tab-setup')">Setup</button>
+    </nav>
+
+    <section id="tab-compare" class="tab-content">
+      <p>Comparison view coming soon...</p>
+    </section>
+
+    <section id="tab-create" class="tab-content">
+      <p>Movement entries coming soon...</p>
+    </section>
+
+    <section id="tab-setup" class="tab-content active">
+      <div class="section-box">
+        <h3>Account Owners</h3>
+        <div id="owners-list"></div>
+        <button onclick="addOwner()">+ Add Person</button>
+      </div>
+
+      <div class="section-box">
+        <h3>Accounts</h3>
+        <div class="input-group">
+          <label for="opening-date">Opening balance as of:</label>
+          <input type="date" id="opening-date">
+        </div>
+        <div id="accounts-list">
+          </div>
+        <button onclick="addAccount()">+ Add Account</button>
+      </div>
+    </section>
+
+    <?!= includeCommon(); ?>
+    <?!= include('html/predictor/modal_javascript'); ?>
+  </body>
+</html>

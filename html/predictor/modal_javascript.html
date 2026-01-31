@@ -1,0 +1,38 @@
+<script>
+/**
+ * Initial Load
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  google.script.run
+    .withSuccessHandler(data => {
+      initializeSetup(data);
+    })
+    .getInitialData();
+});
+
+/**
+ * Tab Switching Logic
+ */
+const openTab = (evt, tabId) => {
+  const contents = document.querySelectorAll(".tab-content");
+  contents.forEach(content => content.classList.remove("active"));
+  
+  const links = document.querySelectorAll(".tab-link");
+  links.forEach(link => link.classList.remove("active"));
+  
+  document.getElementById(tabId).classList.add("active");
+  evt.currentTarget.classList.add("active");
+};
+
+const initializeSetup = (data) => {
+  // Format the JS Date object to YYYY-MM-DD for the HTML input
+  if (data.openingDate) {
+    const dateObj = new Date(data.openingDate);
+    const formattedDate = dateObj.toISOString().split('T')[0];
+    document.getElementById('opening-date').value = formattedDate;
+  }
+  
+  console.log("Setup initialized with owners:", data.owners);
+  // We'll build the list rendering in Task 2
+};
+</script>

@@ -5,6 +5,117 @@ const testProjectionsOutputSheet = () => {
 
 const projectionOutputSheet = () => {
   
+  const PROJECT_OVER_YEARS = 3;
+
+  const getFormatRules = () => {
+    return {
+      "sectionHeader": {
+        "fontColor": "#000000",
+        "fontWeight": "bold"
+      },
+      "accountHeader": {
+        "fontColor": "#000000",
+        "fontWeight": "bold"
+      },
+      "dateColumn": {
+        "background": "#ffffff",
+        "fontColor": "#000000",
+        "fontWeight": "normal",
+        "numberFormat": "d\"-\"mmm\"-\"yy"
+      },
+      "descriptionColumn": {
+        "background": "#ffffff",
+        "fontColor": "#000000",
+        "fontWeight": "normal",
+        "numberFormat": "0.###############"
+      },
+      "amountColumn": {
+        "background": "#ffffff",
+        "fontColor": "#000000",
+        "fontWeight": "normal",
+        "numberFormat": "[$£]#,##0"
+      },
+      "amountUSD": {
+        "numberFormat": "[$$]#,##0"
+      },
+      "accountColumn": {
+        "background": "#ffffff",
+        "fontColor": "#000000",
+        "fontWeight": "normal",
+        "numberFormat": "[$£]#,##0"
+      },
+      "equitySumColumn": {
+        "background": "#ffffff",
+        "fontColor": "#000000",
+        "fontWeight": "bold",
+        "numberFormat": "[$£]#,##0"
+      },
+      "netWorthSumColumn": {
+        "background": "#ffffff",
+        "fontColor": "#000000",
+        "fontWeight": "bold",
+        "numberFormat": "[$£]#,##0"
+      },
+      "conditionals": {
+        "dimHistoric": ({range}) => ({
+          "name": "Dim historic event backgrounds",
+          "type": "BOOLEAN",
+          "criteria": {
+            "type": "CUSTOM_FORMULA",
+            "values": [
+              // "=AND(NOT(ISBLANK($B4)), $B4 < now())"
+              convertRcToA1(`=AND(NOT(ISBLANK(RC${range.getColumn()})), RC${range.getColumn()} < now())`, range.getRow(), range.getColumn())
+            ],
+            "background": "#F3F3F3",
+            "fontColor": null,
+            "bold": null
+          }
+        }),
+        "redAmount": () => ({
+          "name": "Amount in the Red",
+          "type": "BOOLEAN",
+          "criteria": {
+            "type": "NUMBER_LESS_THAN",
+            "values": [
+              0
+            ],
+            "background": "#FF0000",
+            "fontColor": "#FFFFFF",
+            "bold": null
+          }
+        }),
+        "dimConsistentAmounts": ({ range }) => ({
+          "name": "Dim consistent amount",
+          "type": "BOOLEAN",
+          "criteria": {
+            "type": "CUSTOM_FORMULA",
+            "values": [
+              //"=G4=G5"
+              convertRcToA1("=RC=R[1]C", range.getRow(), range.getColumn())
+            ],
+            "background": null,
+            "fontColor": "#B7B7B7",
+            "bold": null
+          }
+        }),
+        "highlightChangedAmounts": ({ range }) => ({
+          "name": "Highlight amount changes",
+          "type": "BOOLEAN",
+          "criteria": {
+            "type": "CUSTOM_FORMULA",
+            "values": [
+              //"=G4<>G5"
+              convertRcToA1("=RC<>R[1]C", range.getRow(), range.getColumn())
+            ],
+            "background": null,
+            "fontColor": null,
+            "bold": true
+          }
+        })
+      }
+    };
+  }
+
   const PROJECTION_OUTPUT_SHEETNAME = 'Projection Output'
   const helper = makeHelper(PROJECTION_OUTPUT_SHEETNAME);
 
@@ -17,7 +128,6 @@ const projectionOutputSheet = () => {
     END_DATE,
     RECURRENCE,
     AMOUNT,
-    CUSTOM
   } = projectionsSheet.getColumns();
 
   const makeRecurrenceOf = (store, item, firstDate, maxDate, nextDateFn) => {
@@ -46,7 +156,7 @@ const projectionOutputSheet = () => {
     }, { opening: [], scheduled: [] });
     
     const now = new Date();
-    const defaultEnd = addYears(now, 2);
+    const defaultEnd = addYears(now, PROJECT_OVER_YEARS);
     const store = {};
     const oneTimeOnly = (store, item, date) => makeRecurrenceOf(
       store,
@@ -414,18 +524,237 @@ const projectionOutputSheet = () => {
         });
         return arr;
       }, [[...sizedHeaderArray], [...sizedHeaderArray]])
-debugger;
+
+      manuallyCalculate(data);
+
       helper.resetSheet();
       helper.getRange(allColumns.first, startRow, allColumns.last, startRow + 1).setValues(headerValues);
       helper.getRange(fixedStartColumns.first, firstDataRow, fixedStartColumns.last, lastDataRow).setValues(fixedStartValues);
       console.log('setting R1C1 formulas')
       helper.getRange(allDynamicColumns.first, firstDataRow, allColumns.last, lastDataRow).setFormulasR1C1(grid);
       helper.padSheet('br');
+      helper.freezeView(firstDataRow-1, allDynamicColumns.first-1)
 
+      /**************
+       * APPLY THE FORMATTING
+       */
+      const formatting = getFormatRules();
+      
+      formatUtils().applyFormatting(
+        formatting.sectionHeader, 
+        helper.getRange(allColumns.first, startRow, allColumns.last, startRow)
+      );
+
+      formatUtils().applyFormatting(
+        formatting.accountHeader, 
+        helper.getRange(allColumns.first, startRow + 1, allColumns.last, startRow + 1)
+      );
+      formatUtils().applyFormatting(
+        formatting.dateColumn,
+        helper.getRange(allColumns.colLabelToNumMap[DATE], firstDataRow, allColumns.colLabelToNumMap[DATE], lastDataRow)
+      );
+      
+      formatUtils().applyFormatting(
+        formatting.descriptionColumn,
+        helper.getRange(allColumns.colLabelToNumMap[DESCRIPTION], firstDataRow, allColumns.colLabelToNumMap[DESCRIPTION], lastDataRow)
+      );
+      
+      formatUtils().applyFormatting(
+        formatting.amountColumn,
+        helper.getRange(allColumns.colLabelToNumMap[AMOUNT], firstDataRow, allColumns.colLabelToNumMap[AMOUNT], lastDataRow)
+      );
+
+      /*formatUtils().applyFormatting(
+        formatting.amountUSD,
+        helper.getRange(1, 2, 3, 4)
+      );*/
+      
+      formatUtils().applyFormatting(
+        formatting.accountColumn,
+        helper.getRange(allDynamicColumns.first, firstDataRow, allDynamicColumns.last, lastDataRow)
+      );
+
+      allDynamicColumns.keys.forEach(key => {
+        if (!key.includes('USD')) {
+          return;
+        }
+
+        formatUtils().applyFormatting(
+          formatting.amountUSD,
+          helper.getRange(allDynamicColumns.colLabelToNumMap[key], firstDataRow, allDynamicColumns.colLabelToNumMap[key], lastDataRow)
+        );
+      });
+      
+      formatUtils().applyFormatting(
+        formatting.equitySumColumn,
+        helper.getRange(allColumns.colLabelToNumMap[EQUITY], firstDataRow, allColumns.colLabelToNumMap[EQUITY], lastDataRow)
+      );
+      
+      formatUtils().applyFormatting(
+        formatting.netWorthSumColumn,
+        helper.getRange(allColumns.colLabelToNumMap[NET_WORTH], firstDataRow, allColumns.colLabelToNumMap[NET_WORTH], lastDataRow)
+      );
+
+      const applyConditionalFormatting = (name, range) => {
+        const fn = formatting.conditionals[name];
+        const rule = fn({ range });
+        formatUtils().applyFormatting({ conditional: rule }, range);
+      }
+
+      applyConditionalFormatting(
+        'dimHistoric', 
+        helper.getRange(allColumns.first, firstDataRow, allColumns.last, lastDataRow)
+      );
+
+      applyConditionalFormatting(
+        'redAmount', 
+        helper.getRange(equityColumns.first, firstDataRow, equityColumns.last, lastDataRow)
+      );
+
+      applyConditionalFormatting(
+        'dimConsistentAmounts', 
+        helper.getRange(allDynamicColumns.first, firstDataRow, allDynamicColumns.last, lastDataRow)
+      );
+
+      applyConditionalFormatting(
+        'highlightChangedAmounts', 
+        helper.getRange(allDynamicColumns.first, firstDataRow, allDynamicColumns.last, lastDataRow)
+      );
+
+      const manualCalc = manuallyCalculate(data);
+      
       console.log('done')
     }
   }
   
+  const manuallyCalculate = _data => {
+    const data = [..._data].reverse();
+    
+    const addAmount = (acc, section, account, amount) => {
+      if (!account.length) {
+        return;
+      }
+      
+      const key = makeDynamicColKey(section, account);
+      
+      acc[key] = acc[key] || 0;
+      acc[key] += amount;
+    }
+
+    const subtractAmount = (acc, section, account, amount) => {
+      addAmount(acc, section, account, -1*amount);
+    }
+
+    const usdToGbp = (acc, amount) => {
+      return amount * acc['XRate - USDGBP'];
+    }
+
+    const applyInterestGrowth = (acc, section, account, recurrence) => {
+      if (!account.length) {
+        return;
+      }
+
+      const aer = projectionsSheet.getInterestRatesFor(account);
+      const key = makeDynamicColKey(section, account);
+      
+      const multiplier = (() => {
+        switch (recurrence) {
+          case 'One time only':
+            throw new Error(`Interest rates cannot be applied on a "One time only" basis`);
+          case 'Monthly':
+            return (1 + aer) ** (1/12);
+          case 'Quarterly':
+            return (1 + aer) ** (1/4);
+          case 'Yearly':
+            return (1 + aer);
+          default:
+            throw new Error(`Unknonw interest recurrence "${recurrence}"`);
+        }
+      })();
+      
+      
+      
+      acc[key] = acc[key] || 0;
+      acc[key] *= multiplier;
+    }
+
+    const accounting = data.reduce((_acc, rec) => {
+      return rec.items.reduce((acc, item) => {
+        const type = item['TYPE'];
+        const section = item['WHO'];
+        const fromAccount = item['FROM_ACCOUNT'];
+        const toAccount = item['TO_ACCOUNT'];
+        const amount = item['AMOUNT'];
+        
+        switch (type) {
+          case 'Opening': 
+            if (fromAccount.length) {
+              throw new Error('Expected FROM ACCOUNT to be empty')
+            }
+            
+            const key = makeDynamicColKey(section, toAccount);
+            
+            if (acc[key]) {
+              throw new Error(`Section "${section}", account "${toAccount}" already contains a value`)
+            }
+
+            acc[key] = amount;
+
+            break;
+
+          case 'Interest Growth':
+            if (fromAccount.length) {
+              throw new Error('Expected FROM ACCOUNT to be empty')
+            }
+
+            applyInterestGrowth(acc, section, toAccount, item['RECURRENCE']);
+            break;
+
+          case 'Personal':
+          case "Mortgage Reduction":
+          case 'Pension':
+          case 'RSU Grant':
+          case 'Sell META':
+          case 'Move':
+          case 'NS&I':
+          case 'To Yula':
+          case 'From Casey':
+          case 'Invest in Fund':
+          case 'Pay':
+          case 'Monthly Bills':
+          case 'Bonus':
+          case 'Holiday Spend':
+          case 'Sell T212':
+          case 'Kids ISAs':
+          case 'Invest Vanguard':
+          case 'Sell US Stock':
+          case 'Move money to UK':
+          case 'Mortgage Lump Sum':
+            // not a great way - should be improved in the future
+            const fromUSD = fromAccount.length && fromAccount.includes('USD');
+            const toGBP = toAccount.length && !toAccount.includes('USD');
+
+            const isUSDtoGBP = fromUSD && toGBP;
+            
+            subtractAmount(acc, section, fromAccount, amount);
+            addAmount(acc, section, toAccount, isUSDtoGBP ? usdToGbp(acc, amount) : amount);
+            break;
+
+          default:
+            debugger;
+            throw new Error(type)
+        }
+
+        return acc;
+
+      }, _acc)
+    }, {});
+
+    console.log(JSON.stringify(accounting, undefined, 2))
+
+    debugger;
+  }
+
   return funcs;
 };
 

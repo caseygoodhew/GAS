@@ -1,3 +1,18 @@
+const testSomeUtilFunction = () => {
+  // --- Test Cases ---
+  const nums = a1ToRowAndColNums('G4')
+  const r = nums.row;
+  const c = nums.col; // Column E
+
+  console.log(convertRcToA1("=RC[1]", r, c));   // "=F10"  (Same row, next col)
+  console.log(convertRcToA1("=R[1]C", r, c));   // "=E11"  (Next row, same col)
+  console.log(convertRcToA1("=RC", r, c));      // "=E10"  (Self reference)
+  console.log(convertRcToA1("=R1C1"));      // "=E10"  (Self reference)
+  console.log(convertRcToA1("=R5C", r, c));     // "=E$5"  (Absolute row 5, same col)
+  console.log(convertRcToA1("=RC<>R[1]C", r, c));     
+  console.log(convertRcToA1("=AND(NOT(ISBLANK(RC)), RC < now())", r, c))
+}
+
 const isRange = (range) => {
   // there's a Range class, but I don't think we can use instanceof with it, so we need to be a little hacky
   return typeof range === 'object' 
@@ -30,6 +45,23 @@ const a1ToArray = (a1) => {
 
   const matches = a1.match(re);
   return [toColNumber(matches[1]), parseInt(matches[2], 10)];
+}
+
+const a1ToRowAndColNums = (a1) => {
+  if (!isString(a1)) {
+    throw new Error(`Expected a1 to be a string, got (${a1})`)
+  }
+
+  const match = a1.match(/(\$?)([A-Z]+)(\$?)(\d+)/i);
+  
+  if (!match) {
+    throw new Error(`Invalid A1 notation: ${a1}`);
+  }
+
+  return {
+    col: toColNumber(match[2].toUpperCase()),
+    row: parseInt(match[4], 10),
+  };
 }
 
 const rangeArrayIncludes = (array, col, row) => {
@@ -520,4 +552,55 @@ const toTitleCase = (str) => {
     )
     .join(' ');
 };
+
+/**
+ * Converts a string containing RC notation to A1 notation, handling defaults.
+ * @param {string} formula - The string/formula containing RC refs.
+ * @param {number} anchorRow - The row index of the reference cell.
+ * @param {number} anchorCol - The col index of the reference cell.
+ * @return {string} The rewritten string in A1 notation.
+ */
+const convertRcToA1 = (formula, anchorRow, anchorCol) => {
+  
+  // Regex breakdown:
+  // R(?:\[([-+0-9]+)\]|([0-9]+))? -> Matches R followed by [rel], abs, or nothing
+  // C(?:\[([-+0-9]+)\]|([0-9]+))? -> Matches C followed by [rel], abs, or nothing
+  const rcRegex = /R(?:\[([-+0-9]+)\]|([0-9]+))?C(?:\[([-+0-9]+)\]|([0-9]+))?/gi;
+
+  return formula.replace(rcRegex, (match, relRow, absRow, relCol, absCol) => {
+    // If it's just 'R' or 'C' alone without the other, it might not be a full RC ref.
+    // However, in formulas, RC[1] is a valid full reference.
+    if (match === 'R' || match === 'C') return match; 
+
+    let rowNum, colNum;
+    let isAbsRow = false;
+    let isAbsCol = false;
+
+    // --- Row Logic ---
+    if (relRow !== undefined) {
+      rowNum = anchorRow + parseInt(relRow, 10);
+    } else if (absRow !== undefined) {
+      rowNum = parseInt(absRow, 10);
+      isAbsRow = true;
+    } else {
+      // Default: If 'R' is present but no numbers, offset is 0
+      rowNum = anchorRow;
+    }
+
+    // --- Column Logic ---
+    if (relCol !== undefined) {
+      colNum = anchorCol + parseInt(relCol, 10);
+    } else if (absCol !== undefined) {
+      colNum = parseInt(absCol, 10);
+      isAbsCol = true;
+    } else {
+      // Default: If 'C' is present but no numbers, offset is 0
+      colNum = anchorCol;
+    }
+
+    const colLetter = toColLetter(colNum);
+    return `${isAbsCol ? '$' : ''}${colLetter}${isAbsRow ? '$' : ''}${rowNum}`;
+  });
+};
+
 
