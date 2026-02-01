@@ -100,13 +100,12 @@ const removeOwner = (index) => {
   renderAccounts();
 };
 
-const renderAccounts = () {
-  debugger;
+const renderAccounts = () => {
   var container = document.getElementById('accounts-list');
   var template = document.getElementById('account-row-template');
   var accounts = window.appState.accounts || [];
   var owners = window.appState.owners || [];
-  debugger;
+
   container.innerHTML = '';
 
   if (accounts.length === 0) {
