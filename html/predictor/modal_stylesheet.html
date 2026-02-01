@@ -318,4 +318,111 @@ button:hover, .btn-secondary:hover {
   font-size: 12px;
   color: var(--gray-label);
 }
+
+.config-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: var(--gray-bg);
+  border: 1px solid var(--gray-border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/*.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}*/
+
+/* --- Section Header Adjustments --- */
+.section-header {
+  margin-bottom: 12px;
+  /* Keeps the H3 left-aligned now that the button is gone */
+  display: block; 
+}
+
+/* Ensure buttons at the bottom of sections align with the Setup tab style */
+.section-box > .btn-secondary {
+  margin-top: 12px;
+  /* Ensures it stays on its own line and aligns left */
+  display: inline-flex; 
+}
+
+/* Optional: Add a subtle separator before the button if the list is long */
+#section-income-list:not(:empty),
+#section-regular-list:not(:empty),
+#section-mortgage-list:not(:empty),
+#section-life-event-list:not(:empty) {
+  margin-bottom: 8px;
+}
+
+.section-desc {
+  font-size: 12px;
+  color: var(--gray-label);
+  margin: -8px 0 12px 0;
+}
+
+/* --- Grid Definitions --- */
+.grid-opening, .grid-movement, .grid-transfer, .grid-mortgage {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.grid-opening { grid-template-columns: 2fr 1fr 1fr; }
+.grid-movement { grid-template-columns: 1.5fr 1.2fr 1.2fr 1.5fr 1fr 1.2fr 40px; }
+.grid-transfer { grid-template-columns: 1.2fr 1fr 1fr 1.2fr 1.2fr 0.8fr 1fr 40px; }
+.grid-mortgage { 
+  grid-template-columns: 1.2fr 1fr 1fr 0.6fr 0.7fr 0.8fr 1fr 40px; 
+}
+
+input[readonly] {
+  background-color: var(--gray-bg);
+  color: var(--gray-label);
+  border-color: #e8eaed;
+  cursor: default;
+}
+
+/* --- Header Row Alignment --- */
+.header-row {
+  margin-bottom: 6px;
+  background-color: #ffffff;
+  position: sticky; /* Optional: keeps headers visible while scrolling a section */
+  top: 0;
+  z-index: 5;
+}
+
+.header-row div {
+  font-size: 10px; /* Slightly smaller for density */
+  color: var(--gray-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Ensure empty messages don't break the grid */
+.empty-msg {
+  font-size: 12px; /* Slightly smaller for density */
+  grid-column: 1 / -1; /* Spans all columns in the grid */
+  padding: 16px;
+  margin: 4px 0;
+}
+
+.acc-label-ro {
+  font-size: 13px;
+  font-weight: 500;
+  color: #202124;
+}
+
+/* Density overrides for Create tab */
+#tab-create input, #tab-create select {
+  height: 28px;
+  padding: 2px 6px;
+  font-size: 12px;
+}
 </style>
