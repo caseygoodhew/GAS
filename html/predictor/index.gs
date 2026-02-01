@@ -2,7 +2,7 @@
  * Opens the investment predictor modal.
  */
 const showPredictorModal = () => {
-  const html = HtmlService.createTemplateFromFile('modal')
+  const html = HtmlService.createTemplateFromFile('html/predictor/modal')
     .evaluate()
     .setWidth(800)
     .setHeight(600);
@@ -14,13 +14,13 @@ const showPredictorModal = () => {
  */
 const getInitialData = () => {
   // You will replace this with actual Spreadsheet/PropertiesService logic.
-  return {
+  return apiResponse({
     owners: ["Self", "Partner"],
     accounts: [
       { id: 1, owner: "Self", name: "High Yield Savings", currency: "GBP", balance: 5000, aer: 4.5 }
     ],
     openingDate: new Date(2026, 0, 31)
-  };
+  });
 };
 
 /**
