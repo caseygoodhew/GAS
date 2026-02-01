@@ -29,23 +29,32 @@ const initializeSetup = (data) => {
 };
 
 /**
- * Renders the list of account owners into the #owners-list div
+ * Renders the list of account owners using the HTML template
  */
 const renderOwners = () => {
   const container = document.getElementById('owners-list');
-  const owners = window.appState.owners;
+  const template = document.getElementById('owner-row-template');
+  const owners = window.appState.owners || [];
+
+  if (!container || !template) return;
+  container.innerHTML = '';
 
   if (owners.length === 0) {
-    container.innerHTML = '<p style="font-style: italic; color: #999;">No owners added yet.</p>';
+    container.innerHTML = '<p class="empty-msg">No owners added yet.</p>';
     return;
   }
 
-  container.innerHTML = owners.map((owner, index) => `
-    <div class="list-item">
-      <span>${owner}</span>
-      <button class="btn-icon" onclick="removeOwner(${index})">🗑️</button>
-    </div>
-  `).join('');
+  owners.forEach((owner, index) => {
+    // Clone the template content
+    const clone = template.content.cloneNode(true);
+    const row = clone.querySelector('.list-item');
+    
+    // Set the name and the click handler
+    row.querySelector('.owner-name').textContent = owner;
+    row.querySelector('.btn-icon').onclick = () => removeOwner(index);
+    
+    container.appendChild(clone);
+  });
 };
 
 /**

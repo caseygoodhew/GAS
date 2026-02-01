@@ -122,16 +122,33 @@ select:focus {
   min-width: 150px;
 }
 
+/* --- Account Owners Grid --- */
+#owners-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Creates three equal columns */
+  gap: 10px; /* Space between the chips */
+  margin-bottom: 16px;
+}
+
 .list-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 10px; /* Compact padding for grid cells */
   background-color: var(--gray-bg);
   border: 1px solid var(--gray-border);
   border-radius: 4px;
-  margin-bottom: 6px;
   font-size: 13px;
+  /* Margin-bottom removed as 'gap' in the grid handles spacing */
+  margin-bottom: 0; 
+}
+
+/* Ensure the trash icon in the owner chip isn't too large */
+.list-item .btn-icon {
+  padding: 2px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
 }
 
 .inline-input-group {
