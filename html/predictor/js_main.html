@@ -3,15 +3,16 @@ const predictorModuleController = (() => {
 
   const USE_SAMPLE_DATA = true;
 
-  const constants = ['SETUP', 'MOVEMENTS', 'DEBUG'].reduce((acc, val) => ({ ...acc, [val]: val }), {});
+  const constants = ['REGISTRY', 'ACTUALS', 'MOVEMENTS', 'DEBUG'].reduce((acc, val) => ({ ...acc, [val]: val }), {});
   
   const {
-    SETUP,
+    REGISTRY,
+    ACTUALS,
     MOVEMENTS,
     DEBUG
   } = constants;
 
-  const INITIAL_TAB = SETUP;
+  const INITIAL_MODULE = REGISTRY;
   
   const moduleMap = {
     [SETUP]: predictorSetupModule,
@@ -36,23 +37,6 @@ const predictorModuleController = (() => {
     });
   }
 
-  /**
-   * Tab Switching Logic
-   */
-  const openTab = (tabKey) => {
-    
-    const contents = document.querySelectorAll(".module-content");
-    contents.forEach(content => content.classList.remove("active"));
-    
-    const links = document.querySelectorAll(".tab-link");
-    links.forEach(link => link.classList.remove("active"));
-    
-    document.getElementById(`tab-link-${tabKey.toLowerCase()}`).classList.add("active");
-    document.getElementById(`module-${tabKey.toLowerCase()}`).classList.add("active");
-    
-    bus.relay(tabKey).activate();
-  };
-
   const init = () => {
       /**
      * Initial Load
@@ -68,12 +52,36 @@ const predictorModuleController = (() => {
       });
     }
 
-    openTab(INITIAL_TAB);
+    if (INITIAL_MODULE) {
+      navigate(INITIAL_MODULE);
+    }
   }
 
+  const goHome = () => {
+    document.getElementById('main-launcher').style.display = 'grid';
+    document.getElementById('module-container').style.display = 'none';
+  };
+
+  const navigate = (key) => {
+    document.getElementById('main-launcher').style.display = 'none';
+    document.getElementById('module-container').style.display = 'block';
+    
+    // Hide all modules
+    document.querySelectorAll('.module-content').forEach(el => el.classList.remove('active'));
+    
+    // Show selected
+    const targetId = `module-${constants[key].toLowerCase()}`;
+    document.getElementById(targetId).classList.add('active');
+    document.getElementById('current-module-title').innerText = key;
+    
+    // Trigger module activation
+    bus.relay(constants[key]).activate();
+  };
+  
   return {
     init,
-    openTab
+    navigate,
+    goHome
   }
 })();
 

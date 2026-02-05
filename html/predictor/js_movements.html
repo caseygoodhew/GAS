@@ -1,10 +1,10 @@
 <script>
 const predictorMovementsModule = (() => {
   
-  const initScope = (bus, data, { SETUP }) => {
+  const initScope = (bus, data, { REGISTRY }) => {
   
     const RECURRENCE_LIST = ['One time only', 'Monthly', 'Quarterly', 'Yearly'];
-    let appState = bus.relay(SETUP).getData();
+    let appState = bus.relay(REGISTRY).getData();
 
     const handleNewConfig = () => { 
       initMovements()

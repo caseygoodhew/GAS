@@ -2,7 +2,7 @@
  * Opens the investment predictor modal.
  */
 const showPredictorModal = () => {
-  const html = HtmlService.createTemplateFromFile('html/predictor/html_modal_controller')
+  const html = HtmlService.createTemplateFromFile('html/predictor/html_main')
     .evaluate()
     .setWidth(800)
     .setHeight(600);

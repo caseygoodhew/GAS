@@ -3,8 +3,8 @@
     <h3>Account Owners</h3>
     <div id="owners-list"></div> 
     <div class="inline-input-group">
-      <input type="text" id="new-owner-name" placeholder="Enter name..." onkeypress="predictorSetupModule.handleOwnerKeyPress(event)">
-      <button class="btn btn-secondary" onclick="predictorSetupModule.addOwner()">+ Person</button>
+      <input type="text" id="new-owner-name" placeholder="Enter name..." onkeypress="predictorRegistryModule.handleOwnerKeyPress(event)">
+      <button class="btn btn-secondary" onclick="predictorRegistryModule.addOwner()">+ Person</button>
     </div>
   </div>
 
@@ -12,7 +12,7 @@
     <h3>Accounts</h3>
     <div class="input-group">
       <label for="opening-date">Balance as of:</label>
-      <input type="date" id="opening-date" onchange="predictorSetupModule.updateOpeningDate(this.value)">
+      <input type="date" id="opening-date" onchange="predictorRegistryModule.updateOpeningDate(this.value)">
     </div>
     
     <div class="account-header">
@@ -26,7 +26,7 @@
 
     <div id="accounts-list"></div> 
     
-    <button class="btn btn-secondary" style="margin-top: 12px;" onclick="predictorSetupModule.addAccount()">+ Account</button>
+    <button class="btn btn-secondary" style="margin-top: 12px;" onclick="predictorRegistryModule.addAccount()">+ Account</button>
   </div>
 
 

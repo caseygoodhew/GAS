@@ -1,7 +1,12 @@
 <script>
-const predictorSetupModule = (() => {
+const predictorRegistryModule = (() => {
   
-  let appState = {};
+  let appState = {
+    owners: [],
+    accounts: [] // Will hold { id, name, owner, currency, aer, isDeleted }
+  };
+
+  const generateId = () => Math.random().toString(36).substr(2, 9);
 
   /**
    * Renders the list of account owners using the HTML template
@@ -134,14 +139,13 @@ const predictorSetupModule = (() => {
    */
   const addAccount = () => {
     const newAccount = {
+      id: generateId(),
       name: '',
       owner: appState.owners[0] || '',
       currency: 'GBP',
-      balance: 0,
-      aer: 0
+      aer: 0,
+      isDeleted: false
     };
-    
-    if (!appState.accounts) appState.accounts = [];
     appState.accounts.push(newAccount);
     renderAccounts();
   };
@@ -149,9 +153,12 @@ const predictorSetupModule = (() => {
   /**
    * Removes an account from the state
    */
-  const removeAccount = (index) => {
-    appState.accounts.splice(index, 1);
-    renderAccounts();
+  const removeAccount = (id) => {
+    const acc = appState.accounts.find(a => a.id === id);
+    if (acc) {
+      acc.isDeleted = true; // Soft delete
+      renderAccounts();
+    }
   };
 
   /**
@@ -169,6 +176,11 @@ const predictorSetupModule = (() => {
     appState.openingDate = value;
   };
 
+  const getData = () => (clone({
+    owners: [...appState.owners],
+    accounts: appState.accounts // Other modules will filter isDeleted
+  }));
+
   return {
     init: ({ data }) => {
       appState = data;
@@ -178,9 +190,7 @@ const predictorSetupModule = (() => {
       renderAccounts();
     },
     activate: () => {},
-    getData: () => {
-      return JSON.parse(JSON.stringify(appState))
-    },
+    getData,
     addAccount,
     handleOwnerKeyPress,
     addOwner,
