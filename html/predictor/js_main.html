@@ -3,21 +3,29 @@ const predictorModuleController = (() => {
 
   const USE_SAMPLE_DATA = true;
 
-  const constants = ['REGISTRY', 'ACTUALS', 'MOVEMENTS', 'DEBUG'].reduce((acc, val) => ({ ...acc, [val]: val }), {});
+  const constants = [
+    'LAUNCHER',
+    'REGISTRY', 
+    //'ACTUALS', 
+    'MOVEMENTS', 
+    //'DEBUG'
+  ].reduce((acc, val) => ({ ...acc, [val]: val }), {});
   
   const {
+    LAUNCHER,
     REGISTRY,
-    ACTUALS,
+    //ACTUALS,
     MOVEMENTS,
-    DEBUG
+    //DEBUG
   } = constants;
 
-  const INITIAL_MODULE = REGISTRY;
+  const INITIAL_MODULE = LAUNCHER;
   
   const moduleMap = {
-    [SETUP]: predictorSetupModule,
+    [LAUNCHER]: predictorLauncherModule,
+    [REGISTRY]: predictorRegistryModule,
     [MOVEMENTS]: predictorMovementsModule,
-    [DEBUG]: predictorDebugModule
+    //[DEBUG]: predictorDebugModule
   }
   
   const bus = {
@@ -28,12 +36,13 @@ const predictorModuleController = (() => {
 
   const initModules = (initData) => {
     Object.keys(constants).forEach(moduleKey => {
+      console.log(moduleKey)
       moduleMap[moduleKey].init({
         moduleKey,
         bus,
         constants,
         data: initData[moduleKey]
-      })
+      });
     });
   }
 
@@ -53,18 +62,19 @@ const predictorModuleController = (() => {
     }
 
     if (INITIAL_MODULE) {
-      navigate(INITIAL_MODULE);
+      if (INITIAL_MODULE === LAUNCHER) {
+        goHome();
+      } else {
+        navigate(INITIAL_MODULE);
+      }
     }
   }
 
   const goHome = () => {
-    document.getElementById('main-launcher').style.display = 'grid';
-    document.getElementById('module-container').style.display = 'none';
+    navigate(LAUNCHER)
   };
 
   const navigate = (key) => {
-    document.getElementById('main-launcher').style.display = 'none';
-    document.getElementById('module-container').style.display = 'block';
     
     // Hide all modules
     document.querySelectorAll('.module-content').forEach(el => el.classList.remove('active'));
@@ -73,6 +83,7 @@ const predictorModuleController = (() => {
     const targetId = `module-${constants[key].toLowerCase()}`;
     document.getElementById(targetId).classList.add('active');
     document.getElementById('current-module-title').innerText = key;
+    document.getElementById('module-container').className = `for-${targetId}`;
     
     // Trigger module activation
     bus.relay(constants[key]).activate();
@@ -86,5 +97,5 @@ const predictorModuleController = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', predictorModuleController.init);
-
+//# sourceURL=js_main.js
 </script>

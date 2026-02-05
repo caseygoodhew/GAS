@@ -1,7 +1,7 @@
 <script>
 const predictorRegistryModule = (() => {
   
-  let appState = {
+  const appState = {
     owners: [],
     accounts: [] // Will hold { id, name, owner, currency, aer, isDeleted }
   };
@@ -176,16 +176,22 @@ const predictorRegistryModule = (() => {
     appState.openingDate = value;
   };
 
-  const getData = () => (clone({
+  const getData = () => (JSON.parse(JSON.stringify({
     owners: [...appState.owners],
     accounts: appState.accounts // Other modules will filter isDeleted
-  }));
+  })));
 
   return {
     init: ({ data }) => {
-      appState = data;
+      if (data) {
+        if (data.owners) {
+          appState.owners = data.owners;
+        }
+        if (data.accounts) {
+          appState.accounts = data.accounts;
+        }
+      }
 
-      document.getElementById('opening-date').value = formatToYYYYMMDD(data.openingDate || new Date());
       renderOwners();
       renderAccounts();
     },
@@ -198,6 +204,6 @@ const predictorRegistryModule = (() => {
     
   }
 })();
-
+//# sourceURL=js_registry.js
 </script>
 

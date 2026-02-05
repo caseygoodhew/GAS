@@ -113,6 +113,18 @@ body {
   flex-shrink: 0;
 }
 
+#module-container.for-module-launcher {
+  background-color: var(--white);
+}
+
+#module-container.for-module-launcher .module-header {
+  display: none;
+}
+
+#module-container.for-module-launcher .module-content-wrapper {
+  display: none;
+}
+
 .btn-back {
   background: none;
   border: none;
@@ -149,8 +161,15 @@ body {
   display: none; /* Controlled by predictorModuleController */
 }
 
-.module-content.active {
+.active {
   display: block;
+}
+
+.hidden {
+  display: none;
+}
+
+.module-content.active {
   animation: slideUp 0.3s ease-out;
 }
 

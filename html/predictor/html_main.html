@@ -6,36 +6,19 @@
   </head>
   <body>
 
-    <div id="main-launcher">
-      <div class="dash-card card-registry" onclick="predictorModuleController.navigate('REGISTRY')">
-        <div class="card-title">Manage Registry</div>
-        <p>Define account owners, individual accounts, currencies, and base interest rates.</p>
-      </div>
-
-      <div class="dash-card card-actuals" onclick="predictorModuleController.navigate('ACTUALS')">
-        <div class="card-title">Record Actuals</div>
-        <p>Record point-in-time balance updates to track your real-world progress.</p>
-      </div>
-
-      <div class="dash-card card-movements" onclick="predictorModuleController.navigate('MOVEMENTS')">
-        <div class="card-title">Model Movements</div>
-        <p>Set up recurring income, standard transfers, and complex mortgage scenarios.</p>
-      </div>
-
-      <div class="dash-card card-predictions" onclick="predictorModuleController.navigate('PREDICTIONS')">
-        <div class="card-title">View Predictions</div>
-        <p>Combine Actuals and Movements to forecast your financial future across different scenarios.</p>
-      </div>
-    </div>
-
-    <div id="module-container" style="display: none;">
+    
+    <div id="module-container" class="">
       <header class="module-header">
-        <button class="btn-secondary" onclick="predictorModuleController.goHome()">← Back to Dashboard</button>
-        <h2 id="current-module-title">Module Name</h2>
+        <button class="btn-back" onclick="predictorModuleController.goHome()">←</button>
+        <h2 id="current-module-title">Module</h2>
       </header>
       
-      <?!= include('html/predictor/html_registry'); ?> 
-      <?!= include('html/predictor/html_movements'); ?>
+      <?!= include('html/predictor/html_launcher'); ?>
+      
+      <div class="module-content-wrapper">
+        <?!= include('html/predictor/html_registry'); ?> 
+        <?!= include('html/predictor/html_movements'); ?>
+      </div>
     </div>
 
         
@@ -46,6 +29,7 @@
     <?!= include('html/predictor/js_registry'); ?>
     <?!= include('html/predictor/js_movements'); ?>
     <?!= include('html/predictor/js_debug'); ?>
+    <?!= include('html/predictor/js_launcher'); ?>
     <?!= include('html/predictor/js_main'); ?>
 
   </body>
