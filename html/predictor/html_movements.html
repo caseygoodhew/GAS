@@ -1,0 +1,91 @@
+<section id="module-movements" class="module-content">
+  
+  <div id="movements-sections">
+    <div class="section-box">
+      <h3>Opening Balances & Rates (Overrides)</h3>
+      <p class="section-desc">Adjust opening balances and interest rates.</p>
+      <div id="section-opening-list"></div>
+    </div>
+
+    <div class="section-box">
+      <div class="section-header"><h3>Income</h3></div>
+      <p class="section-desc">Incoming cash flows such as salary, bonuses, or RSUs.</p>
+      <div id="section-income-list"></div>
+      <button class="btn btn-secondary" onclick="predictorMovementsModule.addMovement('income')">+ Income</button>
+    </div>
+
+    <div class="section-box">
+      <div class="section-header"><h3>Regular Movements</h3></div>
+      <p class="section-desc">Regular transfers between your accounts, like monthly savings or standing orders.</p>
+      <div id="section-regular-list"></div>
+      <button class="btn btn-secondary" onclick="predictorMovementsModule.addMovement('regular')">+ Movement</button>
+    </div>
+
+    <div class="section-box">
+      <div class="section-header"><h3>Mortgage</h3></div>
+      <p class="section-desc">Track debt repayment, interest rates, and annual lump sum overpayment logic.</p>
+      <div id="section-mortgage-list"></div>
+      <button class="btn btn-secondary" onclick="predictorMovementsModule.addMovement('mortgage')">+ Mortgage</button>
+    </div>
+
+    <div class="section-box">
+      <div class="section-header"><h3>Life Events</h3></div>
+      <p class="section-desc">Significant one-off movements like planned home repairs, university tuition, etc..</p>
+      <div id="section-life-event-list"></div>
+      <button class="btn btn-secondary" onclick="predictorMovementsModule.addMovement('life-event')">+ Event</button>
+    </div>
+  </div>
+
+  <template id="tpl-opening-row">
+    <div class="grid-opening">
+      <div class="acc-label-ro"></div>
+      <input type="number" step="0.01" class="field-balance" placeholder="0.00">
+      <input type="number" step="0.01" class="field-aer" placeholder="0.00">
+    </div>
+  </template>
+
+  <template id="tpl-movement-row">
+    <div class="grid-movement">
+      <input type="text" class="field-label" placeholder="Label">
+      <input type="date" class="field-start">
+      <input type="date" class="field-end">
+      <select class="field-account"></select>
+      <input type="number" step="0.01" class="field-amount" placeholder="0.00">
+      <select class="field-recurrence"></select>
+      <div class="acc-col-action">
+        <button class="btn-icon field-delete">🗑️</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-transfer-row">
+    <div class="grid-transfer">
+      <input type="text" class="field-label" placeholder="Label">
+      <input type="date" class="field-start">
+      <input type="date" class="field-end">
+      <select class="field-from"></select>
+      <select class="field-to"></select>
+      <input type="number" step="0.01" class="field-amount" placeholder="0.00">
+      <select class="field-recurrence"></select>
+      <div class="acc-col-action">
+        <button class="btn-icon field-delete">🗑️</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-mortgage-row">
+    <div class="grid-mortgage">
+      <input type="number" step="0.01" class="field-principal" placeholder="Loan Amount">
+      <input type="date" class="field-start">
+      <input type="date" class="field-end">
+      <input type="number" class="field-years" placeholder="Yrs">
+      <input type="number" step="0.01" class="field-rate" placeholder="Rate %">
+      <input type="number" step="0.01" class="field-lump" placeholder="Lump %">
+      <input type="number" step="0.01" class="field-pay" placeholder="0.00" readonly tabindex="-1">
+      <div class="acc-col-action">
+        <button class="btn-icon field-delete">🗑️</button>
+      </div>
+    </div>
+  </template>
+
+</section>

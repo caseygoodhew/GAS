@@ -3,28 +3,20 @@ const predictorModuleController = (() => {
 
   const USE_SAMPLE_DATA = true;
 
-  const emptyModule = {
-    init: () => {},
-    activate: () => {},
-    getData: () => ({})
-  }
-
-  const constants = ['SETUP', 'CREATE', 'COMPARE', 'DEBUG'].reduce((acc, val) => ({ ...acc, [val]: val }), {});
+  const constants = ['SETUP', 'MOVEMENTS', 'DEBUG'].reduce((acc, val) => ({ ...acc, [val]: val }), {});
   
   const {
     SETUP,
-    CREATE,
-    COMPARE,
+    MOVEMENTS,
     DEBUG
   } = constants;
 
   const INITIAL_TAB = SETUP;
   
   const moduleMap = {
-    [SETUP]: predictorSetupTab,
-    [CREATE]: predictorCreateTab,
-    [COMPARE]: emptyModule,
-    [DEBUG]: predictorDebugTab
+    [SETUP]: predictorSetupModule,
+    [MOVEMENTS]: predictorMovementsModule,
+    [DEBUG]: predictorDebugModule
   }
   
   const bus = {
@@ -48,15 +40,16 @@ const predictorModuleController = (() => {
    * Tab Switching Logic
    */
   const openTab = (tabKey) => {
-    const contents = document.querySelectorAll(".tab-content");
+    
+    const contents = document.querySelectorAll(".module-content");
     contents.forEach(content => content.classList.remove("active"));
     
     const links = document.querySelectorAll(".tab-link");
     links.forEach(link => link.classList.remove("active"));
     
     document.getElementById(`tab-link-${tabKey.toLowerCase()}`).classList.add("active");
-    document.getElementById(`tab-${tabKey.toLowerCase()}`).classList.add("active");
-
+    document.getElementById(`module-${tabKey.toLowerCase()}`).classList.add("active");
+    
     bus.relay(tabKey).activate();
   };
 

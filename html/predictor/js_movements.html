@@ -1,5 +1,5 @@
 <script>
-const predictorCreateTab = (() => {
+const predictorMovementsModule = (() => {
   
   const initScope = (bus, data, { SETUP }) => {
   
@@ -7,7 +7,7 @@ const predictorCreateTab = (() => {
     let appState = bus.relay(SETUP).getData();
 
     const handleNewConfig = () => { 
-      initCreateTab()
+      initMovements()
     };
 
     const handleLoadConfig = () => { /* Stub */ };
@@ -15,13 +15,13 @@ const predictorCreateTab = (() => {
     /**
      * Initialize State for Task 5
      */
-    const initCreateTab = () => {
+    const initMovements = () => {
       
       if (!appState.movements) {
         appState.movements = { opening: {}, income: [], regular: [], mortgage: [], lifeEvents: [] };
       }
       
-      renderAllCreateSections();
+      renderAllMovementsSections();
     };
 
     /**
@@ -101,9 +101,9 @@ const predictorCreateTab = (() => {
     };
 
     /**
-     * Orchestrates the rendering of all sections in the Create tab
+     * Orchestrates the rendering of all sections in the Movements tab
      */
-    const renderAllCreateSections = () => {
+    const renderAllMovementsSections = () => {
       renderOpeningSection();
       renderMovementSection('income', 'section-income-list', 'tpl-movement-row');
       renderRegularSection(); // Needs a custom renderer due to "From/To" logic
@@ -330,7 +330,7 @@ const predictorCreateTab = (() => {
 
     const removeMovement = (section, index) => {
       appState.movements[section].splice(index, 1);
-      renderAllCreateSections();
+      renderAllMovementsSections();
     };
 
     
@@ -352,7 +352,7 @@ const predictorCreateTab = (() => {
       };
 
       appState.movements[section].push({ ...defaults[section] });
-      renderAllCreateSections();
+      renderAllMovementsSections();
     };
 
     /**
@@ -374,7 +374,7 @@ const predictorCreateTab = (() => {
       });*/
     };
 
-    initCreateTab();
+    initMovements();
 
     return {
       addMovement
