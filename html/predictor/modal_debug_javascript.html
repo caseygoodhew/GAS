@@ -1,0 +1,57 @@
+<script>
+const predictorDebugTab = (() => {
+  
+  let keys = null;
+  let bus = null;
+
+  const makeJson = () => {
+    return keys
+      .filter(key => !['DEBUG'].includes(key))
+      .reduce((acc, key) => ({ 
+        ...acc, 
+        [key]: bus.relay(key).getData()
+      }), {});
+  };
+
+  /**
+   * Copies the current appState JSON to the clipboard with SVG feedback
+   */
+  const copyDebugToClipboard = (event) => {
+    const json = JSON.stringify(makeJson(), null, 2);
+    const btn = event.currentTarget;
+    const originalIcon = btn.innerHTML;
+    
+    const checkIcon = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>`;
+
+    navigator.clipboard.writeText(json).then(() => {
+      btn.innerHTML = checkIcon;
+      btn.classList.add('copy-success');
+
+      setTimeout(() => {
+        btn.innerHTML = originalIcon;
+        btn.classList.remove('copy-success');
+      }, 100);
+    }).catch(err => {
+      console.error('Clipboard error:', err);
+      showAlert('Error', 'Failed to copy to clipboard.');
+    });
+  };
+
+  return {
+    init: ({ bus: _bus, constants }) => {
+      keys = Object.values(constants);
+      bus = _bus;
+    },
+    activate: () => {
+      const debugContainer = document.getElementById('debug-state');
+      if (keys && debugContainer) {
+        debugContainer.textContent = JSON.stringify(makeJson(), null, 2);
+      }
+    },
+    copyDebugToClipboard,
+  }
+})();
+</script>

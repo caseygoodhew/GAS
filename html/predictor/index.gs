@@ -14,12 +14,14 @@ const showPredictorModal = () => {
  */
 const getInitialData = () => {
   // You will replace this with actual Spreadsheet/PropertiesService logic.
-  return apiResponse({
-    owners: ["Self", "Partner"],
-    accounts: [
-      { id: 1, owner: "Self", name: "High Yield Savings", currency: "GBP", balance: 5000, aer: 4.5 }
-    ],
-    openingDate: new Date(2026, 0, 31)
+  return apiResponse({ 
+    'SETUP': {
+      owners: ["Self", "Partner"],
+      accounts: [
+        { id: 1, owner: "Self", name: "High Yield Savings", currency: "GBP", balance: 5000, aer: 4.5 }
+      ],
+      openingDate: new Date(2026, 0, 31)
+    }
   });
 };
 

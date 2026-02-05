@@ -1,0 +1,399 @@
+<script>
+const predictorCreateTab = (() => {
+  
+  const initScope = (bus, data, { SETUP }) => {
+  
+    const RECURRENCE_LIST = ['One time only', 'Monthly', 'Quarterly', 'Yearly'];
+    let appState = bus.relay(SETUP).getData();
+
+    const handleNewConfig = () => { 
+      initCreateTab()
+    };
+
+    const handleLoadConfig = () => { /* Stub */ };
+
+    /**
+     * Initialize State for Task 5
+     */
+    const initCreateTab = () => {
+      
+      if (!appState.movements) {
+        appState.movements = { opening: {}, income: [], regular: [], mortgage: [], lifeEvents: [] };
+      }
+      
+      renderAllCreateSections();
+    };
+
+    /**
+     * Renders the opening balances with override support
+     */
+    const renderOpeningSection = () => {
+      const container = document.getElementById('section-opening-list');
+      const template = document.getElementById('tpl-opening-row');
+      const accounts = appState.accounts || [];
+      
+      // Sort: Owner (A-Z) then Account Name (A-Z)
+      const sorted = accounts.map((acc, idx) => ({ ...acc, originalIndex: idx }))
+        .sort((a, b) => a.owner.localeCompare(b.owner) || a.name.localeCompare(b.name));
+
+      container.innerHTML = `
+        <div class="grid-opening header-row">
+          <div>Account</div>
+          <div>Override Balance</div>
+          <div>Override AER %</div>
+        </div>`;
+
+      sorted.forEach(item => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('.grid-opening');
+        const override = appState.movements.opening[item.originalIndex] || {};
+
+        row.querySelector('.acc-label-ro').textContent = `${item.owner} - ${item.name}`;
+        
+        const balInput = row.querySelector('.field-balance');
+        const aerInput = row.querySelector('.field-aer');
+        
+        balInput.value = override.balance !== undefined ? override.balance : item.balance;
+        aerInput.value = override.aer !== undefined ? override.aer : item.aer;
+
+        balInput.oninput = (e) => updateOverride(item.originalIndex, 'balance', e.target.value);
+        aerInput.oninput = (e) => updateOverride(item.originalIndex, 'aer', e.target.value);
+
+        container.appendChild(clone);
+      });
+    };
+
+    const updateOverride = (idx, field, val) => {
+      if (!appState.movements.opening[idx]) appState.movements.opening[idx] = {};
+      appState.movements.opening[idx][field] = parseFloat(val) || 0;
+    };
+
+    /**
+     * Shared Dropdown Helpers
+     */
+    const populateAccountOptions = (selectEl, selectedOwner, selectedName) => {
+      const accounts = appState.accounts || [];
+      selectEl.innerHTML = '<option value="" disabled selected>Select Account...</option>';
+      accounts.forEach(acc => {
+        const opt = document.createElement('option');
+        const label = `${acc.owner} - ${acc.name}`;
+        opt.value = label;
+        opt.textContent = label;
+        if (acc.owner === selectedOwner && acc.name === selectedName) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    };
+
+    const populateRecurrenceOptions = (selectEl, selectedValue) => {
+      RECURRENCE_LIST.forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        if (val === selectedValue) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    };
+
+    const syncAccountToData = (obj, compositeValue) => {
+      const [owner, name] = compositeValue.split(' - ');
+      obj.owner = owner;
+      obj.accountName = name;
+    };
+
+    /**
+     * Orchestrates the rendering of all sections in the Create tab
+     */
+    const renderAllCreateSections = () => {
+      renderOpeningSection();
+      renderMovementSection('income', 'section-income-list', 'tpl-movement-row');
+      renderRegularSection(); // Needs a custom renderer due to "From/To" logic
+      renderMortgageSection();
+      renderMovementSection('lifeEvents', 'section-life-event-list', 'tpl-movement-row');
+    };
+
+    const renderEmptyEntries = (container) => {
+      container.innerHTML = '<p class="empty-msg">No entries</p>';
+    }
+
+    /**
+     * Generic renderer for Income and Life Events
+     */
+    const renderMovementSection = (stateKey, containerId, templateId) => {
+      const container = document.getElementById(containerId);
+      const template = document.getElementById(templateId);
+      const data = appState.movements[stateKey] || [];
+
+      if (data.length === 0) {
+        return renderEmptyEntries(container);
+      }
+
+      container.innerHTML = `
+        <div class="grid-movement header-row">
+          <div>Description</div>
+          <div>Start Date</div>
+          <div>End Date</div>
+          <div>Account</div>
+          <div>Amount</div>
+          <div>Recurrence</div>
+          <div></div>
+        </div>`;
+
+      data.forEach((item, index) => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('div');
+
+        // Populate Fields
+        row.querySelector('.field-label').value = item.label || '';
+        row.querySelector('.field-start').value = item.start || '';
+        row.querySelector('.field-end').value = item.end || '';
+        row.querySelector('.field-amount').value = item.amount || 0;
+
+        // Populate Dropdowns
+        const accSelect = row.querySelector('.field-account');
+        const recSelect = row.querySelector('.field-recurrence');
+        populateAccountOptions(accSelect, item.owner, item.accountName);
+        populateRecurrenceOptions(recSelect, item.recurrence);
+
+        // Event Listeners
+        row.querySelector('.field-label').oninput = (e) => updateMovementField(stateKey, index, 'label', e.target.value);
+        row.querySelector('.field-start').onchange = (e) => updateMovementField(stateKey, index, 'start', e.target.value);
+        row.querySelector('.field-end').onchange = (e) => updateMovementField(stateKey, index, 'end', e.target.value);
+        row.querySelector('.field-amount').oninput = (e) => updateMovementField(stateKey, index, 'amount', parseFloat(e.target.value) || 0);
+        
+        accSelect.onchange = (e) => {
+          syncAccountToData(item, e.target.value);
+          updateMovementField(stateKey, index, 'owner', item.owner); // Ensure state updates
+        };
+        recSelect.onchange = (e) => updateMovementField(stateKey, index, 'recurrence', e.target.value);
+        row.querySelector('.field-delete').onclick = () => removeMovement(stateKey, index);
+
+        container.appendChild(clone);
+      });
+    };
+
+    /**
+     * Custom renderer for Transfers (Regular Movements)
+     */
+    const renderRegularSection = () => {
+      const container = document.getElementById('section-regular-list');
+      const template = document.getElementById('tpl-transfer-row');
+      const data = appState.movements.regular || [];
+
+      if (data.length === 0) {
+        return renderEmptyEntries(container);
+      }
+
+      container.innerHTML = `
+        <div class="grid-transfer header-row">
+          <div>Label</div>
+          <div>Start Date</div>
+          <div>End Date</div>
+          <div>From Account</div>
+          <div>To Account</div>
+          <div>Amount</div>
+          <div>Recurrence</div>
+          <div></div>
+        </div>`;
+    
+      data.forEach((item, index) => {
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('.grid-transfer');
+
+        // Basic Fields
+        row.querySelector('.field-label').value = item.label || '';
+        row.querySelector('.field-start').value = item.start || '';
+        row.querySelector('.field-end').value = item.end || '';
+        row.querySelector('.field-amount').value = item.amount || 0;
+
+        // Dropdowns
+        const fromSelect = row.querySelector('.field-from');
+        const toSelect = row.querySelector('.field-to');
+        const recSelect = row.querySelector('.field-recurrence');
+        
+        populateAccountOptions(fromSelect, item.fromOwner, item.fromAccount);
+        populateAccountOptions(toSelect, item.toOwner, item.toAccount);
+        populateRecurrenceOptions(recSelect, item.recurrence);
+
+        // Event Listeners
+        row.querySelector('.field-label').oninput = (e) => updateMovementField('regular', index, 'label', e.target.value);
+        row.querySelector('.field-start').onchange = (e) => updateMovementField('regular', index, 'start', e.target.value);
+        row.querySelector('.field-end').onchange = (e) => updateMovementField('regular', index, 'end', e.target.value);
+        row.querySelector('.field-amount').oninput = (e) => updateMovementField('regular', index, 'amount', parseFloat(e.target.value) || 0);
+        
+        fromSelect.onchange = (e) => {
+          const [owner, name] = e.target.value.split(' - ');
+          item.fromOwner = owner;
+          item.fromAccount = name;
+        };
+        toSelect.onchange = (e) => {
+          const [owner, name] = e.target.value.split(' - ');
+          item.toOwner = owner;
+          item.toAccount = name;
+        };
+        recSelect.onchange = (e) => updateMovementField('regular', index, 'recurrence', e.target.value);
+        row.querySelector('.field-delete').onclick = () => removeMovement('regular', index);
+
+        container.appendChild(clone);
+      });
+    };
+
+    /**
+     * Calculates monthly mortgage repayment
+     */
+    const calculateMortgagePayment = (principal, annualRate, years) => {
+      if (!principal || !annualRate || !years) return 0;
+      
+      const monthlyRate = annualRate / 100 / 12;
+      const numberOfPayments = years * 12;
+      
+      // Formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]
+      const x = Math.pow(1 + monthlyRate, numberOfPayments);
+      const monthly = (principal * x * monthlyRate) / (x - 1);
+      
+      return parseFloat(monthly.toFixed(2));
+    };
+
+    /**
+     * Custom renderer for the Mortgage section
+     */
+    const renderMortgageSection = () => {
+      const container = document.getElementById('section-mortgage-list');
+      const template = document.getElementById('tpl-mortgage-row');
+      const data = appState.movements.mortgage || [];
+
+      if (data.length === 0) {
+        return renderEmptyEntries(container);
+      }
+
+      container.innerHTML = `
+        <div class="grid-mortgage header-row">
+          <div>Loan Amount</div>
+          <div>Start Date</div>
+          <div>End Date</div>
+          <div>Years</div>
+          <div>Rate %</div>
+          <div>Lump %</div>
+          <div>Monthly Pay</div>
+          <div></div>
+        </div>`;
+
+      data.forEach((item, index) => {
+        
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('.grid-mortgage');
+
+        // Populate Fields
+        row.querySelector('.field-principal').value = item.principal || '';
+        row.querySelector('.field-start').value = item.start || '';
+        row.querySelector('.field-end').value = item.end || '';
+        row.querySelector('.field-years').value = item.years || 25;
+        row.querySelector('.field-rate').value = item.rate || 0;
+        row.querySelector('.field-lump').value = item.lump || 0;
+        
+        // Initial Calculation
+        const payment = calculateMortgagePayment(item.principal, item.rate, item.years);
+        row.querySelector('.field-pay').value = payment;
+        item.pay = payment; // Sync state
+
+        // Event Listeners for Live Updates
+        const inputs = row.querySelectorAll('.field-principal, .field-rate, .field-years');
+        inputs.forEach(input => {
+          input.oninput = () => {
+            // Update state
+            item.principal = parseFloat(row.querySelector('.field-principal').value) || 0;
+            item.rate = parseFloat(row.querySelector('.field-rate').value) || 0;
+            item.years = parseInt(row.querySelector('.field-years').value) || 0;
+            
+            // Recalculate
+            const newPay = calculateMortgagePayment(item.principal, item.rate, item.years);
+            row.querySelector('.field-pay').value = newPay;
+            item.pay = newPay;
+          };
+        });
+
+        // Other listeners
+        row.querySelector('.field-start').onchange = (e) => updateMovementField('mortgage', index, 'start', e.target.value);
+        row.querySelector('.field-end').onchange = (e) => updateMovementField('mortgage', index, 'end', e.target.value);
+        row.querySelector('.field-lump').oninput = (e) => updateMovementField('mortgage', index, 'lump', parseFloat(e.target.value) || 0);
+        row.querySelector('.field-delete').onclick = () => removeMovement('mortgage', index);
+
+        container.appendChild(clone);
+      });
+    };
+
+    /**
+     * Field Syncing Logic
+     */
+    const updateMovementField = (section, index, field, value) => {
+      appState.movements[section][index][field] = value;
+    };
+
+    const removeMovement = (section, index) => {
+      appState.movements[section].splice(index, 1);
+      renderAllCreateSections();
+    };
+
+    
+
+    const addMovement = (type) => {
+      const keyMap = { 
+        'income': 'income', 
+        'regular': 'regular', 
+        'mortgage': 'mortgage', 
+        'life-event': 'lifeEvents' 
+      };
+      const section = keyMap[type];
+      
+      const defaults = {
+        income: { label: '', start: '', end: '', owner: '', accountName: '', amount: 0, recurrence: 'Monthly' },
+        regular: { label: '', start: '', end: '', fromOwner: '', fromAccount: '', toOwner: '', toAccount: '', amount: 0, recurrence: 'Monthly' },
+        mortgage: { start: '', end: '', years: 25, rate: 4.5, lump: 0, pay: 0 },
+        lifeEvents: { label: '', start: '', end: '', owner: '', accountName: '', amount: 0, recurrence: 'One time only' }
+      };
+
+      appState.movements[section].push({ ...defaults[section] });
+      renderAllCreateSections();
+    };
+
+    /**
+     * Gathers the current state and sends it to the server
+     */
+    const handleSave = () => {
+      /*remoteCall({
+        handler: (api) => api.saveSetupData(appState),
+        spinner: 'Saving your settings...',
+        success: (result) => {
+          const status = document.getElementById('save-status');
+          status.textContent = 'Last saved at ' + new Date().toLocaleTimeString('en-GB');
+          status.style.color = '#1e8e3e';
+          
+          // Optional: Visual confirmation via your alert.html
+          // showAlert('Success', 'Configuration saved successfully.');
+        },
+        failure: 'There was a problem saving your data. Please try again.'
+      });*/
+    };
+
+    initCreateTab();
+
+    return {
+      addMovement
+    }
+  }
+
+  const scope = {
+    init: ({ constants, bus, data }) => {
+      const extend = initScope(bus, data, constants);
+      if (extend) {
+        Object.keys(extend).forEach(key => {
+          scope[key] = extend[key];
+        });
+      }
+    },
+    activate: () => {},
+    getData: () => {},
+  };
+
+  return scope;
+})();
+</script>

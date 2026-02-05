@@ -1,0 +1,193 @@
+<script>
+const predictorSetupTab = (() => {
+  
+  let appState = {};
+
+  /**
+   * Renders the list of account owners using the HTML template
+   */
+  const renderOwners = () => {
+    const container = document.getElementById('owners-list');
+    const template = document.getElementById('owner-row-template');
+    const owners = appState.owners || [];
+
+    if (!container || !template) return;
+    container.innerHTML = '';
+
+    if (owners.length === 0) {
+      container.innerHTML = '<p class="empty-msg">No owners added yet.</p>';
+      return;
+    }
+
+    owners.forEach((owner, index) => {
+      // Clone the template content
+      const clone = template.content.cloneNode(true);
+      const row = clone.querySelector('.list-item');
+      
+      // Set the name and the click handler
+      row.querySelector('.owner-name').textContent = owner;
+      row.querySelector('.btn-icon').onclick = () => removeOwner(index);
+      
+      container.appendChild(clone);
+    });
+  };
+
+  /**
+   * Adds a new owner from the HTML input field
+   */
+  const addOwner = () => {
+    const input = document.getElementById('new-owner-name');
+    const name = input.value.trim();
+    
+    if (!name) return;
+
+    // Prevent duplicates
+    if (appState.owners.includes(name)) {
+      showAlert("Duplicate Name", `${name} is already in the list.`);
+      return;
+    }
+
+    // Update state and UI
+    appState.owners.push(name);
+    input.value = ''; // Clear input
+    input.focus();    // Keep focus for rapid entry
+    
+    renderOwners();
+    renderAccounts();
+  };
+
+  /**
+   * Allows adding owners by pressing 'Enter'
+   */
+  const handleOwnerKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      addOwner();
+    }
+  };
+
+  /**
+   * Removes an owner if they are not linked to any accounts
+   */
+  const removeOwner = (index) => {
+    const ownerToRemove = appState.owners[index];
+    
+    // Validation: Check if the owner is assigned to any accounts
+    const isAssigned = appState.accounts.some(acc => acc.owner === ownerToRemove);
+
+    if (isAssigned) {
+      showAlert("Cannot Remove", `${ownerToRemove} is currently assigned to an account and cannot be removed.`);
+      return;
+    }
+
+    appState.owners.splice(index, 1);
+    renderOwners();
+    renderAccounts();
+  };
+
+  const renderAccounts = () => {
+    var container = document.getElementById('accounts-list');
+    var template = document.getElementById('account-row-template');
+    var accounts = appState.accounts || [];
+    var owners = appState.owners || [];
+
+    container.innerHTML = '';
+
+    if (accounts.length === 0) {
+      container.innerHTML = '<p class="empty-msg">No accounts added. Click "+ Add Account" to begin.</p>';
+      return;
+    }
+
+    accounts.forEach(function(acc, index) {
+      var clone = template.content.cloneNode(true);
+      var row = clone.querySelector('.account-row');
+
+      // Populate Owner Dropdown
+      var ownerSelect = row.querySelector('.field-owner');
+      owners.forEach(function(owner) {
+        var opt = document.createElement('option');
+        opt.value = owner;
+        opt.textContent = owner;
+        if (acc.owner === owner) opt.selected = true;
+        ownerSelect.appendChild(opt);
+      });
+
+      // Set Values
+      row.querySelector('.field-name').value = acc.name || '';
+      row.querySelector('.field-currency').value = acc.currency || 'GBP';
+      row.querySelector('.field-balance').value = acc.balance ?? 0;
+      row.querySelector('.field-aer').value = acc.aer ?? 0;
+
+      // Listeners
+      row.querySelector('.field-name').oninput = function(e) { updateAccountField(index, 'name', e.target.value); };
+      ownerSelect.onchange = function(e) { updateAccountField(index, 'owner', e.target.value); };
+      row.querySelector('.field-currency').onchange = function(e) { updateAccountField(index, 'currency', e.target.value); };
+      row.querySelector('.field-balance').oninput = function(e) { updateAccountField(index, 'balance', e.target.value); };
+      row.querySelector('.field-aer').oninput = function(e) { updateAccountField(index, 'aer', e.target.value); };
+      row.querySelector('.field-delete').onclick = function() { removeAccount(index); };
+
+      container.appendChild(clone);
+    });
+  }
+
+  /**
+   * Adds a new account with default values to the state
+   */
+  const addAccount = () => {
+    const newAccount = {
+      name: '',
+      owner: appState.owners[0] || '',
+      currency: 'GBP',
+      balance: 0,
+      aer: 0
+    };
+    
+    if (!appState.accounts) appState.accounts = [];
+    appState.accounts.push(newAccount);
+    renderAccounts();
+  };
+
+  /**
+   * Removes an account from the state
+   */
+  const removeAccount = (index) => {
+    appState.accounts.splice(index, 1);
+    renderAccounts();
+  };
+
+  /**
+   * Syncs UI input changes back to the global state
+   */
+  const updateAccountField = (index, field, value) => {
+    const val = (field === 'balance' || field === 'aer') ? parseFloat(value) || 0 : value;
+    appState.accounts[index][field] = val;
+  };
+
+  /**
+   * Updates the opening date in the global state
+   */
+  const updateOpeningDate = (value) => {
+    appState.openingDate = value;
+  };
+
+  return {
+    init: ({ data }) => {
+      appState = data;
+
+      document.getElementById('opening-date').value = formatToYYYYMMDD(data.openingDate || new Date());
+      renderOwners();
+      renderAccounts();
+    },
+    activate: () => {},
+    getData: () => {
+      return JSON.parse(JSON.stringify(appState))
+    },
+    addAccount,
+    handleOwnerKeyPress,
+    addOwner,
+    updateOpeningDate,
+    
+  }
+})();
+
+</script>
+
