@@ -19,6 +19,11 @@
   --shadow-google: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
 }
 
+/* --- Global Reset --- */
+* {
+  box-sizing: border-box;
+}
+
 /* --- Base Layout --- */
 body {
   font-family: 'Roboto', 'Segoe UI', arial, sans-serif;
@@ -165,10 +170,6 @@ body {
   display: block;
 }
 
-.hidden {
-  display: none;
-}
-
 .module-content.active {
   animation: slideUp 0.3s ease-out;
 }
@@ -263,4 +264,112 @@ input:focus {
 /* Utility */
 .hidden { display: none !important; }
 
+/* --- Registry Specific Layouts --- */
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.owner-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.inline-input-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.inline-input-group input {
+  flex-grow: 1;
+}
+
+/* --- Drag and Drop Styles --- */
+.drag-handle {
+  cursor: grab;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 8px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.account-row.dragging {
+  opacity: 0.4;
+  background-color: var(--blue-light);
+  border: 1px dashed var(--blue-base);
+}
+
+/* Update grid to accommodate the drag handle column */
+.account-header, 
+.account-row {
+  display: grid;
+  grid-template-columns: 30px 2fr 1.5fr 1fr 1fr 40px; /* Added 30px for handle */
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.account-header {
+  padding: 8px 12px;
+  background: var(--bg-light);
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.account-row {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.acc-col input, 
+.acc-col select {
+  width: 100%;
+}
+
+.acc-col-action {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background-color: var(--red-light);
+  color: var(--red-base);
+}
+
+.empty-msg {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-style: italic;
+  padding: 12px;
+  text-align: center;
+}
 </style>

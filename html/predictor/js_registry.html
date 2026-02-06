@@ -2,21 +2,64 @@
 const predictorRegistryModule = (() => {
   
   const appState = {
-    owners: [],
-    accounts: [] // Will hold { id, name, owner, currency, aer, isDeleted }
+    owners: [], // Now holds { id, name }
+    accounts: [] // Holds { id, name, ownerId, currency, aer, isDeleted }
   };
 
-  const generateId = () => Math.random().toString(36).substr(2, 9);
+  let draggedId = null;
+
+  const generateId = () => {
+    return Math.random().toString(36).substr(2, 9);
+  };
+
+  // --- Drag and Drop Handlers ---
+
+  const handleDragStart = (e, id) => {
+    draggedId = id;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    return false;
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.stopPropagation();
+    if (draggedId === targetId) {
+      return;
+    }
+
+    const fromIndex = appState.accounts.findIndex(a => { return a.id === draggedId; });
+    const toIndex = appState.accounts.findIndex(a => { return a.id === targetId; });
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const [movedItem] = appState.accounts.splice(fromIndex, 1);
+      appState.accounts.splice(toIndex, 0, movedItem);
+      renderAccounts();
+    }
+  };
+
+  const handleDragEnd = (e) => {
+    e.target.classList.remove('dragging');
+    draggedId = null;
+  };
 
   /**
-   * Renders the list of account owners using the HTML template
+   * Renders the list of account owners
    */
   const renderOwners = () => {
     const container = document.getElementById('owners-list');
     const template = document.getElementById('owner-row-template');
     const owners = appState.owners || [];
 
-    if (!container || !template) return;
+    if (!container || !template) {
+      return;
+    }
+    
     container.innerHTML = '';
 
     if (owners.length === 0) {
@@ -24,76 +67,86 @@ const predictorRegistryModule = (() => {
       return;
     }
 
-    owners.forEach((owner, index) => {
-      // Clone the template content
+    owners.forEach((owner) => {
       const clone = template.content.cloneNode(true);
       const row = clone.querySelector('.list-item');
+
+      // Drag and Drop Listeners
+      row.ondragstart = (e) => { handleDragStart(e, acc.id); };
+      row.ondragover = (e) => { handleDragOver(e); };
+      row.ondrop = (e) => { handleDrop(e, acc.id); };
+      row.ondragend = (e) => { handleDragEnd(e); };
       
-      // Set the name and the click handler
-      row.querySelector('.owner-name').textContent = owner;
-      row.querySelector('.btn-icon').onclick = () => removeOwner(index);
+      row.querySelector('.owner-name').textContent = owner.name;
+      row.querySelector('.btn-icon').onclick = () => {
+        removeOwner(owner.id);
+      };
       
       container.appendChild(clone);
     });
   };
 
   /**
-   * Adds a new owner from the HTML input field
+   * Adds a new owner object to the state
    */
   const addOwner = () => {
     const input = document.getElementById('new-owner-name');
     const name = input.value.trim();
     
-    if (!name) return;
+    if (!name) {
+      return;
+    }
 
-    // Prevent duplicates
-    if (appState.owners.includes(name)) {
+    if (appState.owners.some(o => o.name.toLowerCase() === name.toLowerCase())) {
       showAlert("Duplicate Name", `${name} is already in the list.`);
       return;
     }
 
-    // Update state and UI
-    appState.owners.push(name);
-    input.value = ''; // Clear input
-    input.focus();    // Keep focus for rapid entry
+    appState.owners.push({
+      id: generateId(),
+      name: name
+    });
+
+    input.value = '';
+    input.focus();
     
     renderOwners();
     renderAccounts();
   };
 
   /**
-   * Allows adding owners by pressing 'Enter'
+   * Removes an owner by ID if they are not linked to any active accounts
    */
-  const handleOwnerKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      addOwner();
+  const removeOwner = (id) => {
+    const owner = appState.owners.find(o => o.id === id);
+    if (!owner) {
+      return;
     }
-  };
-
-  /**
-   * Removes an owner if they are not linked to any accounts
-   */
-  const removeOwner = (index) => {
-    const ownerToRemove = appState.owners[index];
     
-    // Validation: Check if the owner is assigned to any accounts
-    const isAssigned = appState.accounts.some(acc => acc.owner === ownerToRemove);
+    const isAssigned = appState.accounts.some(acc => acc.ownerId === id && !acc.isDeleted);
 
     if (isAssigned) {
-      showAlert("Cannot Remove", `${ownerToRemove} is currently assigned to an account and cannot be removed.`);
+      showAlert("Cannot Remove", `${owner.name} is currently assigned to an account and cannot be removed.`);
       return;
     }
 
-    appState.owners.splice(index, 1);
+    appState.owners = appState.owners.filter(o => o.id !== id);
     renderOwners();
     renderAccounts();
   };
 
+  /**
+   * Renders the account table
+   */
   const renderAccounts = () => {
-    var container = document.getElementById('accounts-list');
-    var template = document.getElementById('account-row-template');
-    var accounts = appState.accounts || [];
-    var owners = appState.owners || [];
+    const container = document.getElementById('accounts-list');
+    const template = document.getElementById('account-row-template');
+    const accounts = (appState.accounts || []).filter(acc => !acc.isDeleted);
+    const owners = appState.owners || [];
+
+    if (!container || !template) {
+      return;
+    }
 
     container.innerHTML = '';
 
@@ -102,46 +155,50 @@ const predictorRegistryModule = (() => {
       return;
     }
 
-    accounts.forEach(function(acc, index) {
-      var clone = template.content.cloneNode(true);
-      var row = clone.querySelector('.account-row');
+    accounts.forEach((acc) => {
+      const clone = template.content.cloneNode(true);
+      const row = clone.querySelector('.account-row');
 
-      // Populate Owner Dropdown
-      var ownerSelect = row.querySelector('.field-owner');
-      owners.forEach(function(owner) {
-        var opt = document.createElement('option');
-        opt.value = owner;
-        opt.textContent = owner;
-        if (acc.owner === owner) opt.selected = true;
+      const ownerSelect = row.querySelector('.field-owner');
+      owners.forEach((owner) => {
+        const opt = document.createElement('option');
+        opt.value = owner.id;
+        opt.textContent = owner.name;
+        if (acc.ownerId === owner.id) {
+          opt.selected = true;
+        }
         ownerSelect.appendChild(opt);
       });
 
-      // Set Values
       row.querySelector('.field-name').value = acc.name || '';
       row.querySelector('.field-currency').value = acc.currency || 'GBP';
-      row.querySelector('.field-balance').value = acc.balance ?? 0;
       row.querySelector('.field-aer').value = acc.aer ?? 0;
 
-      // Listeners
-      row.querySelector('.field-name').oninput = function(e) { updateAccountField(index, 'name', e.target.value); };
-      ownerSelect.onchange = function(e) { updateAccountField(index, 'owner', e.target.value); };
-      row.querySelector('.field-currency').onchange = function(e) { updateAccountField(index, 'currency', e.target.value); };
-      row.querySelector('.field-balance').oninput = function(e) { updateAccountField(index, 'balance', e.target.value); };
-      row.querySelector('.field-aer').oninput = function(e) { updateAccountField(index, 'aer', e.target.value); };
-      row.querySelector('.field-delete').onclick = function() { removeAccount(index); };
+      row.querySelector('.field-name').oninput = (e) => {
+        updateAccountField(acc.id, 'name', e.target.value);
+      };
+      ownerSelect.onchange = (e) => {
+        updateAccountField(acc.id, 'ownerId', e.target.value);
+      };
+      row.querySelector('.field-currency').onchange = (e) => {
+        updateAccountField(acc.id, 'currency', e.target.value);
+      };
+      row.querySelector('.field-aer').oninput = (e) => {
+        updateAccountField(acc.id, 'aer', e.target.value);
+      };
+      row.querySelector('.field-delete').onclick = () => {
+        removeAccount(acc.id);
+      };
 
       container.appendChild(clone);
     });
-  }
+  };
 
-  /**
-   * Adds a new account with default values to the state
-   */
   const addAccount = () => {
     const newAccount = {
       id: generateId(),
       name: '',
-      owner: appState.owners[0] || '',
+      ownerId: appState.owners[0]?.id || '',
       currency: 'GBP',
       aer: 0,
       isDeleted: false
@@ -150,36 +207,36 @@ const predictorRegistryModule = (() => {
     renderAccounts();
   };
 
-  /**
-   * Removes an account from the state
-   */
   const removeAccount = (id) => {
     const acc = appState.accounts.find(a => a.id === id);
     if (acc) {
-      acc.isDeleted = true; // Soft delete
+      acc.isDeleted = true;
       renderAccounts();
     }
   };
 
-  /**
-   * Syncs UI input changes back to the global state
-   */
-  const updateAccountField = (index, field, value) => {
-    const val = (field === 'balance' || field === 'aer') ? parseFloat(value) || 0 : value;
-    appState.accounts[index][field] = val;
+  const updateAccountField = (id, field, value) => {
+    const acc = appState.accounts.find(a => a.id === id);
+    if (!acc) {
+      return;
+    }
+
+    const val = (field === 'aer') ? parseFloat(value) || 0 : value;
+    acc[field] = val;
   };
 
-  /**
-   * Updates the opening date in the global state
-   */
-  const updateOpeningDate = (value) => {
-    appState.openingDate = value;
+  const handleOwnerKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      addOwner();
+    }
   };
 
-  const getData = () => (JSON.parse(JSON.stringify({
-    owners: [...appState.owners],
-    accounts: appState.accounts // Other modules will filter isDeleted
-  })));
+  const getData = () => {
+    return JSON.parse(JSON.stringify({
+      owners: [...appState.owners],
+      accounts: appState.accounts 
+    }));
+  };
 
   return {
     init: ({ data }) => {
@@ -191,7 +248,6 @@ const predictorRegistryModule = (() => {
           appState.accounts = data.accounts;
         }
       }
-
       renderOwners();
       renderAccounts();
     },
@@ -199,11 +255,8 @@ const predictorRegistryModule = (() => {
     getData,
     addAccount,
     handleOwnerKeyPress,
-    addOwner,
-    updateOpeningDate,
-    
-  }
+    addOwner
+  };
 })();
 //# sourceURL=js_registry.js
 </script>
-
