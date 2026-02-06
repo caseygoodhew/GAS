@@ -16,36 +16,46 @@ const predictorRegistryModule = (() => {
 
   const handleDragStart = (e, id) => {
     draggedId = id;
-    e.target.classList.add('dragging');
+    // Use a timeout to ensure the 'dragging' class is applied after the ghost image is created
+    setTimeout(() => {
+      const row = document.querySelector(`[data-id="${id}"]`);
+      if (row) {
+        row.classList.add('dragging');
+      }
+    }, 0);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e, targetId) => {
     if (e.preventDefault) {
       e.preventDefault();
+    }
+    
+    // If we are dragging over a different item, update the order in real-time
+    if (draggedId !== null && draggedId !== targetId) {
+      const fromIndex = appState.accounts.findIndex((a) => { return a.id === draggedId; });
+      const toIndex = appState.accounts.findIndex((a) => { return a.id === targetId; });
+
+      if (fromIndex !== -1 && toIndex !== -1) {
+        const [movedItem] = appState.accounts.splice(fromIndex, 1);
+        appState.accounts.splice(toIndex, 0, movedItem);
+        renderAccounts(); // Re-render to show the new positions
+      }
+    }
+    
+    return false;
+  };
+
+  const handleDrop = (e) => {
+    if (e.stopPropagation) {
+      e.stopPropagation();
     }
     return false;
   };
 
-  const handleDrop = (e, targetId) => {
-    e.stopPropagation();
-    if (draggedId === targetId) {
-      return;
-    }
-
-    const fromIndex = appState.accounts.findIndex(a => { return a.id === draggedId; });
-    const toIndex = appState.accounts.findIndex(a => { return a.id === targetId; });
-
-    if (fromIndex !== -1 && toIndex !== -1) {
-      const [movedItem] = appState.accounts.splice(fromIndex, 1);
-      appState.accounts.splice(toIndex, 0, movedItem);
-      renderAccounts();
-    }
-  };
-
   const handleDragEnd = (e) => {
-    e.target.classList.remove('dragging');
     draggedId = null;
+    renderAccounts(); // Final render to clean up classes
   };
 
   /**
@@ -70,12 +80,6 @@ const predictorRegistryModule = (() => {
     owners.forEach((owner) => {
       const clone = template.content.cloneNode(true);
       const row = clone.querySelector('.list-item');
-
-      // Drag and Drop Listeners
-      row.ondragstart = (e) => { handleDragStart(e, acc.id); };
-      row.ondragover = (e) => { handleDragOver(e); };
-      row.ondrop = (e) => { handleDrop(e, acc.id); };
-      row.ondragend = (e) => { handleDragEnd(e); };
       
       row.querySelector('.owner-name').textContent = owner.name;
       row.querySelector('.btn-icon').onclick = () => {
@@ -141,7 +145,7 @@ const predictorRegistryModule = (() => {
   const renderAccounts = () => {
     const container = document.getElementById('accounts-list');
     const template = document.getElementById('account-row-template');
-    const accounts = (appState.accounts || []).filter(acc => !acc.isDeleted);
+    const accounts = (appState.accounts || []).filter((acc) => { return !acc.isDeleted; });
     const owners = appState.owners || [];
 
     if (!container || !template) {
@@ -150,14 +154,28 @@ const predictorRegistryModule = (() => {
 
     container.innerHTML = '';
 
-    if (accounts.length === 0) {
-      container.innerHTML = '<p class="empty-msg">No accounts added. Click "+ Add Account" to begin.</p>';
-      return;
+    if (accounts.length === 0) {            
+      container.innerHTML = '<p class="empty-msg">No accounts added. Click "+ Account" to begin.</p>';            
+      return;            
     }
 
     accounts.forEach((acc) => {
       const clone = template.content.cloneNode(true);
       const row = clone.querySelector('.account-row');
+      
+      // Set ID for CSS selection during drag
+      row.setAttribute('data-id', acc.id);
+      
+      // If this is the item currently being dragged, maintain the class across re-renders
+      if (acc.id === draggedId) {
+        row.classList.add('dragging');
+      }
+
+      // Drag and Drop Listeners
+      row.ondragstart = (e) => { handleDragStart(e, acc.id); };
+      row.ondragover = (e) => { handleDragOver(e, acc.id); };
+      row.ondrop = (e) => { handleDrop(e); };
+      row.ondragend = (e) => { handleDragEnd(e); };
 
       const ownerSelect = row.querySelector('.field-owner');
       owners.forEach((owner) => {
