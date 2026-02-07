@@ -5,12 +5,7 @@ const predictorDebugModule = (() => {
   let bus = null;
 
   const makeJson = () => {
-    return keys
-      .filter(key => !['DEBUG'].includes(key))
-      .reduce((acc, key) => ({ 
-        ...acc, 
-        [key]: bus.relay(key).getData()
-      }), {});
+    return bus.relayActive().getData()
   };
 
   /**

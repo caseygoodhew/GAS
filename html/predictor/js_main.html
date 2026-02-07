@@ -8,7 +8,7 @@ const predictorModuleController = (() => {
     'REGISTRY', 
     //'ACTUALS', 
     'MOVEMENTS', 
-    //'DEBUG'
+    'DEBUG'
   ].reduce((acc, val) => ({ ...acc, [val]: val }), {});
   
   const {
@@ -16,7 +16,7 @@ const predictorModuleController = (() => {
     REGISTRY,
     //ACTUALS,
     MOVEMENTS,
-    //DEBUG
+    DEBUG
   } = constants;
 
   const INITIAL_MODULE = LAUNCHER;
@@ -25,12 +25,18 @@ const predictorModuleController = (() => {
     [LAUNCHER]: predictorLauncherModule,
     [REGISTRY]: predictorRegistryModule,
     [MOVEMENTS]: predictorMovementsModule,
-    //[DEBUG]: predictorDebugModule
+    [DEBUG]: predictorDebugModule
   }
   
   const bus = {
     relay: (target) => {
       return moduleMap[target];
+    },
+
+    relayActive: () => {
+      const activeModule = document.getElementById('module-container').dataset.activeModule;
+      console.log(`relayActive to ${activeModule || 'undefined'}`)
+      return bus.relay(activeModule);
     }
   }
 
@@ -74,17 +80,37 @@ const predictorModuleController = (() => {
     navigate(LAUNCHER)
   };
 
+  const goBackFromDebug = () => {
+    navigate(document.getElementById('module-container').dataset.activeModule || LAUNCHER)
+  };
+
   const navigate = (key) => {
     
     // Hide all modules
     document.querySelectorAll('.module-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.btn-back').forEach(el => el.classList.add('hidden'));
+    
+    if (key === DEBUG) { 
+      document.getElementById('back-from-debug').classList.remove('hidden');
+    } else {
+      document.getElementById('back-home').classList.remove('hidden');
+    }
     
     // Show selected
     const targetId = `module-${constants[key].toLowerCase()}`;
-    document.getElementById(targetId).classList.add('active');
-    document.getElementById('current-module-title').innerText = key;
-    document.getElementById('module-container').className = `for-${targetId}`;
+    if (!document.getElementById(targetId)) {
+      throw new Error(`Are you sure that you've included the ${key} module html?`)
+    }
     
+    document.getElementById(targetId).classList.add('active');
+    const moduleContainer = document.getElementById('module-container');
+    moduleContainer.className = `for-${targetId}`;
+    
+    if (key !== DEBUG) { 
+      document.getElementById('current-module-title').innerText = key;
+      moduleContainer.dataset.activeModule = key;
+    }
+
     // Trigger module activation
     bus.relay(constants[key]).activate();
   };
@@ -92,7 +118,8 @@ const predictorModuleController = (() => {
   return {
     init,
     navigate,
-    goHome
+    goHome,
+    goBackFromDebug
   }
 })();
 
