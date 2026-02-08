@@ -36,12 +36,17 @@
         <?!= include('html/predictor/html_movements'); ?>
         <?!= include('html/predictor/html_debug'); ?>
       </div>
+
+      <footer id="module-footer" class="module-footer">
+        <button class="btn btn-text" onclick="predictorModuleController.onResetData()">Reset</button>
+        <button class="btn btn-primary" onclick="predictorModuleController.onSaveData()">Save Changes</button>
+      </footer>
     </div>
 
         
 
     <?!= includeCommon(); ?>
-    
+    <?!= include('html/predictor/js_shared') ?>
     <?!= include('html/predictor/js_sample_data'); ?>
     <?!= include('html/predictor/js_registry'); ?>
     <?!= include('html/predictor/js_movements'); ?>

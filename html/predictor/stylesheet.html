@@ -157,6 +157,33 @@ body {
   display: none;
 }
 
+#module-container.for-module-launcher .module-footer, #module-container[data-is-debug-mode="true"] .module-footer {
+  display: none;
+}
+
+/* Dim the entire footer and prevent interactions */
+.module-footer.disabled {
+  pointer-events: none; /* Prevents clicks on all child buttons */
+}
+
+/* Specific styling for the buttons when parent is disabled */
+.module-footer.disabled .btn-primary,
+.module-footer.disabled .btn-text {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+
+/* Ensure the primary button doesn't change colour on hover while disabled */
+.module-footer.disabled .btn-primary:hover {
+  background-color: var(--blue-base);
+}
+
+/* Ensure the text button doesn't change colour on hover while disabled */
+.module-footer.disabled .btn-text:hover {
+  color: var(--text-secondary);
+}
+
 .btn-back {
   background: none;
   border: none;
@@ -419,15 +446,24 @@ input:focus {
   overflow-x: auto;
 }
 
+/* --- Debug Module Styling --- */
 #debug-state {
   margin: 0;
-  color: #4e9a06;
+  color: #d4d4d4; /* Base color for brackets, braces, and commas */
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* JSON Syntax Highlighting Classes */
+.json-key { color: #9cdcfe; }     /* Light Blue */
+.json-string { color: #ce9178; }  /* Terracotta */
+.json-id { color: #888888; }      /* Light Grey */
+.json-number { color: #b5cea8; }  /* Light Green */
+.json-boolean { color: #569cd6; } /* Royal Blue */
+.json-null { color: #569cd6; }    /* Royal Blue */
 
 /* Positioning the Copy Button */
 .debug-header {
@@ -462,5 +498,57 @@ input:focus {
 
 .debug-container::-webkit-scrollbar-track {
   background: #1e1e1e;
+}
+
+.module-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--white);
+  border-top: 1px solid var(--border-color);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: color 0.2s;
+}
+
+.btn-text:hover {
+  color: var(--red-base);
+}
+
+.btn-primary {
+  background-color: var(--blue-base);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+/* Ensure the module body takes up remaining space so footer stays at bottom */
+#module-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.module-body {
+  flex-grow: 1;
+  overflow-y: auto;
 }
 </style>

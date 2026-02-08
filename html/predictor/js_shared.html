@@ -1,0 +1,114 @@
+<script>
+const moduleWrapper = (moduleConfig, initCallback) => {
+  
+  let getDataFn = () => {};
+  let moduleData;
+  let cleanDataSig = null;
+  let cleanData = null;
+  let moduleName = null;
+
+  const invokeInitCallback = (config) => {
+    
+    moduleName = config.name || 'Unknown';
+    
+    const data = config.data;
+    delete config.data;
+
+    const exportFns = initCallback({ ...config, ...feedbackFns });
+
+    if (typeof exportFns !== 'object' || Array.isArray(exportFns) || exportFns == null) {
+      return;
+    }
+
+    Object.keys(exportFns).forEach(key => {
+      controlFns[key] = exportFns[key];
+    });
+  
+    controlFns.setData = setDataProxy(controlFns.setData);
+    controlFns.setData(data);
+  }
+
+  const makeDataSig = (data) => {
+    return JSON.stringify({ data })
+  }
+
+  const setDirty = (state) => {
+    document.getElementById('module-footer').classList[state ? 'remove' : 'add']('disabled');
+  }
+
+  const onResetData = () => {
+    if (document.getElementById('module-footer').classList.contains('disabled')) {
+      return;
+    }
+
+    if (confirm('Are you sure you want to reset? All unsaved changes will be lost.')) {
+      controlFns.setData(cleanData);
+    }
+  }
+
+  const onSaveData = () => {
+    if (document.getElementById('module-footer').classList.contains('disabled')) {
+      return;
+    }
+
+    const fns = moduleConfig.save || {};
+    fns.handler = fns.handler || () => {};
+    fns.success = fns.success || () => {};
+    fns.userError = fns.userError || () => {};
+
+    let data = controlFns.getData();
+    
+    remoteCall({
+      handler: (api) => fns.handler(api, data),
+      spinner: `Saving ${moduleName}`,
+      success: () => {
+        cleanData = data;
+        cleanDataSig = makeDataSig(data);
+        setDirty(false);
+
+        fns.success(data);
+      },
+      userError: fns.userError,
+      failure: `Error saving ${moduleName}`
+    });
+  }
+
+  const setDataProxy = (setDataFn) => (data) => {
+    cleanData = JSON.parse(JSON.stringify({data})).data;
+    setDataFn(data);
+    feedbackFns.clearDirtyFlag();
+  }
+
+  const feedbackFns = {
+    clearDirtyFlag: () => {
+      cleanDataSig = makeDataSig(controlFns.getData());
+      setDirty(false);
+    },
+
+    onDataChange: debounce(() => {
+      const dataSig = makeDataSig(controlFns.getData());
+      setDirty(dataSig !== cleanDataSig)
+    }),
+  }
+
+  const activateProxy = (activateFn) => () => {
+    activateFn();
+    // reset the button state
+    feedbackFns.onDataChange();
+  }
+
+  const controlFns = {
+    init: invokeInitCallback,
+    // could be overridden by the implementing component
+    onSaveData,
+    onResetData,
+    // expected to be overridden by the implementing compontent
+    activate: () => {},
+    getData: () => {},
+    setData: () => {}
+  }
+
+  return controlFns;
+}
+//# sourceURL=js_shared.js
+</script>

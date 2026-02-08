@@ -1,12 +1,27 @@
 <script>
 const getSampleData = () => {
   return { 
-    'SETUP': {
-      owners: ["Self", "Partner"],
-      accounts: [
-        { owner: "Self", name: "High Yield Savings", currency: "GBP", balance: 5000, aer: 4.5 }
+    'REGISTRY': {
+      "owners": [
+        {
+          "id": "ludap0tu3",
+          "name": "Casey"
+        },
+        {
+          "id": "rejon10va",
+          "name": "Yula"
+        }
       ],
-      openingDate: new Date(2026, 0, 31)
+      "accounts": [
+        {
+          "id": "4gxwnat27",
+          "name": "Savings",
+          "ownerId": "ludap0tu3",
+          "currency": "GBP",
+          "aer": 0.00,
+          "isDeleted": false
+        }
+      ]
     }
   };
 }

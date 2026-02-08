@@ -1,10 +1,18 @@
 <script>
-const predictorRegistryModule = (() => {
+const predictorRegistryModule = moduleWrapper({
+  save: {
+    handler: (api, data) => api.saveSetupData(data),
+    success: (data) => {},
+    userError: (payload) => {},
+  }
+}, ({ bus, constants, onDataChange }) => {
   
-  const appState = {
-    owners: [], // Now holds { id, name }
-    accounts: [] // Holds { id, name, ownerId, currency, aer, isDeleted }
-  };
+  const appState = {};
+
+  const clearAppState = () => {
+    appState.owners = [];
+    appState.accounts = [];
+  }
 
   let draggedId = null;
 
@@ -62,6 +70,8 @@ const predictorRegistryModule = (() => {
    * Renders the list of account owners
    */
   const renderOwners = () => {
+    onDataChange();
+    
     const container = document.getElementById('owners-list');
     const template = document.getElementById('owner-row-template');
     const owners = appState.owners || [];
@@ -143,6 +153,8 @@ const predictorRegistryModule = (() => {
    * Renders the account table
    */
   const renderAccounts = () => {
+    onDataChange();
+    
     const container = document.getElementById('accounts-list');
     const template = document.getElementById('account-row-template');
     const accounts = (appState.accounts || []).filter((acc) => { return !acc.isDeleted; });
@@ -241,6 +253,7 @@ const predictorRegistryModule = (() => {
 
     const val = (field === 'aer') ? parseFloat(value) || 0 : value;
     acc[field] = val;
+    onDataChange();
   };
 
   const handleOwnerKeyPress = (e) => {
@@ -256,25 +269,28 @@ const predictorRegistryModule = (() => {
     }));
   };
 
+  const setData = (data) => {
+    clearAppState();
+
+    if (data && Array.isArray(data.owners)) {
+      appState.owners = data.owners;
+    }
+
+    if (data && Array.isArray(data.accounts)) {
+      appState.accounts = data.accounts;
+    }
+
+    renderOwners();
+    renderAccounts();  
+  }
+
   return {
-    init: ({ data }) => {
-      if (data) {
-        if (data.owners) {
-          appState.owners = data.owners;
-        }
-        if (data.accounts) {
-          appState.accounts = data.accounts;
-        }
-      }
-      renderOwners();
-      renderAccounts();
-    },
-    activate: () => {},
     getData,
+    setData,
     addAccount,
     handleOwnerKeyPress,
     addOwner
   };
-})();
+});
 //# sourceURL=js_registry.js
 </script>

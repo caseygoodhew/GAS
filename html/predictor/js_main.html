@@ -44,6 +44,7 @@ const predictorModuleController = (() => {
     Object.keys(constants).forEach(moduleKey => {
       console.log(moduleKey)
       moduleMap[moduleKey].init({
+        name: toTitleCase(key),
         moduleKey,
         bus,
         constants,
@@ -111,15 +112,35 @@ const predictorModuleController = (() => {
       moduleContainer.dataset.activeModule = key;
     }
 
+    moduleContainer.dataset.isDebugMode = key === DEBUG;
+
     // Trigger module activation
     bus.relay(constants[key]).activate();
+  };
+
+  const onSaveData = () => {
+    if (bus.relayActive().onSaveData) {
+      bus.relayActive().onSaveData();
+    } else {
+      throw new Error('module does not support onSaveData')
+    }
+  };
+
+  const onResetData = () => {
+    if (bus.relayActive().onResetData) {
+        bus.relayActive().onResetData();
+    } else {
+      throw new Error('module does not support onResetData')
+    }
   };
   
   return {
     init,
     navigate,
     goHome,
-    goBackFromDebug
+    goBackFromDebug,
+    onSaveData,
+    onResetData
   }
 })();
 

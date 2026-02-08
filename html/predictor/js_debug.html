@@ -1,11 +1,49 @@
 <script>
 const predictorDebugModule = (() => {
   
-  let keys = null;
   let bus = null;
 
   const makeJson = () => {
     return bus.relayActive().getData()
+  };
+
+  /**
+   * Helper function to wrap JSON elements in styled spans
+   */
+  const syntaxHighlight = (json) => {
+    if (typeof json !== 'string') {
+      json = JSON.stringify(json, undefined, 2);
+    }
+    
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    const regex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g;
+    
+    return json.replace(regex, (match) => {
+      let cls = 'json-number';
+      
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          cls = 'json-key';
+        } else {
+          // Check if the string value matches the 9-char alphanumeric ID pattern
+          const valueContent = match.slice(1, -1);
+          const idRegex = /^[a-z0-9]{9}$/;
+          
+          if (idRegex.test(valueContent)) {
+            cls = 'json-id';
+          } else {
+            cls = 'json-string';
+          }
+        }
+      } else if (/true|false/.test(match)) {
+        cls = 'json-boolean';
+      } else if (/null/.test(match)) {
+        cls = 'json-null';
+      }
+      
+      return `<span class="${cls}">${match}</span>`;
+    });
   };
 
   /**
@@ -36,14 +74,15 @@ const predictorDebugModule = (() => {
   };
 
   return {
-    init: ({ bus: _bus, constants }) => {
-      keys = Object.values(constants);
+    init: ({ bus: _bus }) => {
       bus = _bus;
     },
     activate: () => {
       const debugContainer = document.getElementById('debug-state');
-      if (keys && debugContainer) {
-        debugContainer.textContent = JSON.stringify(makeJson(), null, 2);
+      if (debugContainer) {
+        const jsonString = JSON.stringify(makeJson(), null, 2);
+        // Use innerHTML instead of textContent to render the spans
+        debugContainer.innerHTML = syntaxHighlight(jsonString);
       }
     },
     copyDebugToClipboard,
