@@ -30,5 +30,4 @@ const getInitialData = () => {
  */
 const saveSetupData = (data) => {
   console.log("Saving data:", data);
-
 };

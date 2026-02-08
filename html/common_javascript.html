@@ -24,6 +24,10 @@ const remoteCall = (options) => {
     return (data, options) => {
       
       if (data) {
+        if (!isObject(data) || !Object.hasOwn(data, 'value')) {
+          throw new Error('Did you remember to wrap your api return value with apiResponse()?')
+        }
+        
         data = JSON.parse(data.value);
       }
       
@@ -223,9 +227,14 @@ const toTitleCase = (str) => {
     return "";
   }
 
-  return str
+  // Handle CONSTANT_CASE by converting to lowercase if the whole string is uppercase
+  // This prevents Step 1 from adding spaces between every letter of an acronym or constant
+  const normalizedStr = str === str.toUpperCase() ? str.toLowerCase() : str;
+
+  return normalizedStr
     // Step 1: Add spaces before capital letters (for camelCase/PascalCase)
-    .replace(/([A-Z])/g, " $1")
+    // Only adds space if there is a character before the capital letter
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
     // Step 2: Replace underscores and hyphens with spaces
     .replace(/[_-]+/g, " ")
     // Step 3: Trim leading/trailing spaces and split into words
@@ -237,5 +246,9 @@ const toTitleCase = (str) => {
     })
     .join(" ");
 };
+
+const isObject = (o) => {
+  return Object.prototype.toString.call( o ) === '[object Object]';
+}
 
 </script>

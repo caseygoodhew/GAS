@@ -15,7 +15,7 @@ function includeCommon() {
 
 function apiResponse(value) {
   if (value == null) {
-    return {};
+    return;
   }
 
   return { value: JSON.stringify(value) };

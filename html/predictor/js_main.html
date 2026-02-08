@@ -107,7 +107,7 @@ const predictorModuleController = (() => {
     moduleContainer.className = `for-${targetId}`;
     
     if (key !== DEBUG) { 
-      document.getElementById('current-module-title').innerText = key;
+      document.getElementById('current-module-title').innerText = toTitleCase(key);
       moduleContainer.dataset.activeModule = key;
     }
 

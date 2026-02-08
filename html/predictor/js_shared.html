@@ -16,7 +16,7 @@ const moduleWrapper = (moduleConfig, initCallback) => {
 
     const exportFns = initCallback({ ...config, ...feedbackFns });
 
-    if (typeof exportFns !== 'object' || Array.isArray(exportFns) || exportFns == null) {
+    if (!isObject(exportFns)) {
       return;
     }
 
