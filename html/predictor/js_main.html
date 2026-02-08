@@ -42,9 +42,8 @@ const predictorModuleController = (() => {
 
   const initModules = (initData) => {
     Object.keys(constants).forEach(moduleKey => {
-      console.log(moduleKey)
       moduleMap[moduleKey].init({
-        name: toTitleCase(key),
+        name: toTitleCase(moduleKey),
         moduleKey,
         bus,
         constants,

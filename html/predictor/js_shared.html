@@ -24,6 +24,7 @@ const moduleWrapper = (moduleConfig, initCallback) => {
       controlFns[key] = exportFns[key];
     });
   
+    controlFns.activate = activateProxy(controlFns.activate);
     controlFns.setData = setDataProxy(controlFns.setData);
     controlFns.setData(data);
   }
