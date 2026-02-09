@@ -251,4 +251,8 @@ const isObject = (o) => {
   return Object.prototype.toString.call( o ) === '[object Object]';
 }
 
+const clone = (o) => {
+  return JSON.parse(JSON.stringify({ o })).o;
+}
+
 </script>

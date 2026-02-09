@@ -263,10 +263,7 @@ const predictorRegistryModule = moduleWrapper({
   };
 
   const getData = () => {
-    return JSON.parse(JSON.stringify({
-      owners: [...appState.owners],
-      accounts: appState.accounts 
-    }));
+    return clone(appState);
   };
 
   const setData = (data) => {
