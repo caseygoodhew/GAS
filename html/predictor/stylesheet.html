@@ -551,4 +551,125 @@ input:focus {
   flex-grow: 1;
   overflow-y: auto;
 }
+
+
+
+
+/* --- Movements Module Grid Layouts --- */
+#module-movements .section-box {
+  margin-bottom: 32px;
+  color: var(--text-secondary);
+}
+
+#module-movements .section-desc {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.movement-item, .mortgage-item {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.movement-item:last-child, .mortgage-item:last-child {
+  border-bottom: none;
+}
+
+/* Common Indentation for sub-rows */
+.indent-row {
+  margin-left: 28px;
+  margin-top: 10px;
+}
+
+/* Standard Movement: 3-Row Model */
+.grid-movement-row1 {
+  display: grid;
+  grid-template-columns: 1fr 140px 40px;
+  gap: 16px;
+  align-items: center;
+}
+
+.grid-movement-row2 {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.grid-movement-row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Mortgage: N-Row Model */
+.grid-mortgage-row1 {
+  display: grid;
+  grid-template-columns: 1.5fr 80px 100px 40px;
+  gap: 16px;
+  align-items: center;
+}
+
+.grid-mortgage-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.grid-mortgage-yearly {
+  display: grid;
+  grid-template-columns: 100px 140px;
+  gap: 16px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.grid-mortgage-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  background: var(--bg-light);
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.summary-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.arrow-separator {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.year-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+#module-movements input, #module-movements select {
+  width: 100%;
+}
 </style>

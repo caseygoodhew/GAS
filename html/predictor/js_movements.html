@@ -39,22 +39,199 @@ const predictorMovementsModule = moduleWrapper({
   }
 
   const refreshAccounts = () => {
-    const data = bus.relay[REGISTRY].getData();
-     // AI TODO: filter out deleted entries
-     // AI TODO: create an array of account labels as ([Owner Name] - [Account Label])
-     // AI TODO: store the result on appState.accounts
+    const registryData = bus.relay(REGISTRY).getData();
+    const ownersMap = (registryData.owners || []).reduce((acc, owner) => {
+      acc[owner.id] = owner.name;
+      return acc;
+    }, {});
+
+    // Filter out deleted entries and format labels as [Owner Name] - [Account Name]
+    appState.accounts = (registryData.accounts || [])
+      .filter(acc => !acc.isDeleted)
+      .map(acc => ({
+        id: acc.id,
+        label: `${ownersMap[acc.ownerId] || 'Unknown'} - ${acc.name || 'Unnamed Account'}`
+      }));
   }
 
-  /**
-   * Orchestrates the rendering of all sections in the Movements tab
-   */
+  const addMovement = (sectionType) => {
+    const key = sectionType === 'life-event' ? 'lifeEvents' : sectionType;
+    const newItem = key === 'mortgage' 
+      ? { principal: 0, years: 10, rate: 0, startDate: '', endDate: '', lumpSums: {} }
+      : { label: '', amount: 0, fromAccount: '', toAccount: '', startDate: '', endDate: '', recurrence: 'Monthly' };
+    
+    appState.movements[key].push(newItem);
+    renderAllMovementsSections();
+    onDataChange();
+  };
+
+  const removeMovement = (key, index) => {
+    appState.movements[key].splice(index, 1);
+    renderAllMovementsSections();
+    onDataChange();
+  };
+
+  const updateField = (key, index, field, value) => {
+    appState.movements[key][index][field] = value;
+    onDataChange();
+  };
+
+  const populateAccountSelect = (select) => {
+    select.innerHTML = '<option value="">-- Select Account --</option>';
+    appState.accounts.forEach(acc => {
+      const opt = document.createElement('option');
+      opt.value = acc.id;
+      opt.textContent = acc.label;
+      select.appendChild(opt);
+    });
+  };
+
+  const renderMovementRow = (container, item, index, sectionKey) => {
+    const clone = document.getElementById('tpl-movement-row').content.cloneNode(true);
+    const row = clone.querySelector('.movement-item');
+
+    const bind = (selector, field, evt = 'input') => {
+      const el = row.querySelector(selector);
+      el.value = item[field] || '';
+      el[evt === 'input' ? 'oninput' : 'onchange'] = (e) => {
+        item[field] = e.target.value;
+        onDataChange();
+      };
+    };
+
+    bind('.field-label', 'label');
+    bind('.field-amount', 'amount');
+    bind('.field-start', 'startDate');
+    bind('.field-end', 'endDate');
+    bind('.field-recurrence', 'recurrence', 'change');
+
+    const fromAcc = row.querySelector('.field-from-account');
+    const toAcc = row.querySelector('.field-to-account');
+    const recSelect = row.querySelector('.field-recurrence');
+
+    [fromAcc, toAcc].forEach(select => {
+      select.innerHTML = '<option value="">-- Select Account --</option>';
+      appState.accounts.forEach(acc => {
+        const opt = document.createElement('option');
+        opt.value = acc.id;
+        opt.textContent = acc.label;
+        select.appendChild(opt);
+      });
+    });
+
+    RECURRENCE_LIST.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = r;
+      recSelect.appendChild(opt);
+    });
+
+    fromAcc.value = item.fromAccount || '';
+    toAcc.value = item.toAccount || '';
+    recSelect.value = item.recurrence || 'Monthly';
+
+    fromAcc.onchange = (e) => { item.fromAccount = e.target.value; onDataChange(); };
+    toAcc.onchange = (e) => { item.toAccount = e.target.value; onDataChange(); };
+
+    row.querySelector('.field-delete').onclick = () => {
+      appState.movements[sectionKey].splice(index, 1);
+      renderAllMovementsSections();
+      onDataChange();
+    };
+
+    container.appendChild(clone);
+  };
+
+  const renderMortgageRow = (container, item, index) => {
+    const clone = document.getElementById('tpl-mortgage-row').content.cloneNode(true);
+    const row = clone.querySelector('.mortgage-item');
+    const dynamicContainer = row.querySelector('.mortgage-dynamic-rows');
+
+    const updateMortgageRows = () => {
+      dynamicContainer.innerHTML = '';
+      if (!item.startDate || !item.endDate) return;
+
+      const start = new Date(item.startDate);
+      const end = new Date(item.endDate);
+      let currentYear = start.getFullYear();
+
+      while (currentYear <= end.getFullYear()) {
+        const year = currentYear;
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'grid-mortgage-yearly';
+        
+        const dateLabel = document.createElement('span');
+        dateLabel.className = 'year-label';
+        dateLabel.textContent = `Dec ${year}`;
+
+        const lumpInput = document.createElement('input');
+        lumpInput.type = 'number';
+        lumpInput.step = '0.01';
+        lumpInput.placeholder = 'Lump Sum %/£';
+        lumpInput.value = item.lumpSums[year] || '';
+        lumpInput.oninput = (e) => {
+          item.lumpSums[year] = e.target.value;
+          onDataChange();
+        };
+
+        rowDiv.appendChild(dateLabel);
+        rowDiv.appendChild(lumpInput);
+        dynamicContainer.appendChild(rowDiv);
+        currentYear++;
+      }
+    };
+
+    const bind = (selector, field) => {
+      const el = row.querySelector(selector);
+      el.value = item[field] || '';
+      el.oninput = (e) => {
+        item[field] = e.target.value;
+        if (field === 'startDate' || field === 'endDate') updateMortgageRows();
+        onDataChange();
+      };
+    };
+
+    bind('.field-principal', 'principal');
+    bind('.field-years', 'years');
+    bind('.field-rate', 'rate');
+    bind('.field-start', 'startDate');
+    bind('.field-end', 'endDate');
+
+    updateMortgageRows();
+
+    row.querySelector('.field-delete').onclick = () => {
+      appState.movements.mortgage.splice(index, 1);
+      renderAllMovementsSections();
+      onDataChange();
+    };
+
+    container.appendChild(clone);
+  };
+
   const renderAllMovementsSections = () => {
-    // TODO: Create renderes for each of the templates listed in html_movements
+    const mappings = [
+      { key: 'income', container: 'section-income-list', renderer: renderMovementRow },
+      { key: 'regular', container: 'section-regular-list', renderer: renderMovementRow },
+      { key: 'mortgage', container: 'section-mortgage-list', renderer: renderMortgageRow },
+      { key: 'lifeEvents', container: 'section-life-event-list', renderer: renderMovementRow }
+    ];
+
+    mappings.forEach(map => {
+      const container = document.getElementById(map.container);
+      if (!container) return;
+      container.innerHTML = '';
+      
+      const items = appState.movements[map.key] || [];
+      if (!items || items.length === 0) {
+        renderEmptyEntries(container);
+      } else {
+        items.forEach((item, idx) => map.renderer(container, item, idx, map.key));
+      }
+    });
   };
 
   const renderEmptyEntries = (container) => {
-    container.innerHTML = '<p class="empty-msg">No entries</p>';
-  }
+    container.innerHTML = '<p class="empty-msg">No entries added yet.</p>';
+  };
 
   const activate = () => {
     refreshAccounts();
@@ -65,6 +242,7 @@ const predictorMovementsModule = moduleWrapper({
     activate,
     getData,
     setData,
+    addMovement
   };
 });
 //# sourceURL=js_movements.js
