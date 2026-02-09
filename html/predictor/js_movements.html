@@ -5,8 +5,9 @@ const predictorMovementsModule = moduleWrapper({
     success: (data) => {},
     userError: (payload) => {},
   }
-}, ({ bus, { REGISTRY }, onDataChange }) => {
-  
+}, ({ bus, constants, onDataChange }) => {
+
+  const { REGISTRY } = constants;
   const RECURRENCE_LIST = ['One time only', 'Monthly', 'Quarterly', 'Yearly'];
   const appState = {};
   const SECTIONS = ['income', 'regular', 'mortgage', 'lifeEvents'];
@@ -17,7 +18,7 @@ const predictorMovementsModule = moduleWrapper({
 
     SECTIONS.forEach(key => appState.movements[key] = []);
   }
-  
+
   const setData = (data) => {
     clearAppState();
 
@@ -43,7 +44,7 @@ const predictorMovementsModule = moduleWrapper({
      // AI TODO: create an array of account labels as ([Owner Name] - [Account Label])
      // AI TODO: store the result on appState.accounts
   }
-  
+
   /**
    * Orchestrates the rendering of all sections in the Movements tab
    */
