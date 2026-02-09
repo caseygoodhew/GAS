@@ -556,9 +556,9 @@ input:focus {
 
 
 /* --- Movements Module Grid Layouts --- */
+/* --- Movements Module Grid Layouts --- */
 #module-movements .section-box {
   margin-bottom: 32px;
-  color: var(--text-secondary);
 }
 
 #module-movements .section-desc {
@@ -582,24 +582,32 @@ input:focus {
   margin-top: 10px;
 }
 
-/* Standard Movement: 3-Row Model */
+/* Income Specific: 2-Row Model */
+.grid-income-row1 {
+  display: grid;
+  grid-template-columns: 1fr 140px 220px 40px; /* Label, amount, To Account, trash icon */
+  gap: 16px;
+  align-items: center;
+}
+
+/* Standard Movement: 3-Row Model (Regular / Life Events) */
 .grid-movement-row1 {
   display: grid;
-  grid-template-columns: 1fr 140px 40px;
+  grid-template-columns: 1fr 140px 40px; /* Label, amount, trash icon */
   gap: 16px;
   align-items: center;
 }
 
 .grid-movement-row2 {
   display: grid;
-  grid-template-columns: 1fr 24px 1fr;
+  grid-template-columns: 1fr 24px 1fr; /* From account, To Account */
   gap: 8px;
   align-items: center;
 }
 
 .grid-movement-row3 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
+  grid-template-columns: 1fr 1fr 1.2fr; /* From Date, To Date, Recurrence */
   gap: 16px;
   align-items: center;
 }

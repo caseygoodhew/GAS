@@ -152,16 +152,16 @@ const predictorMovementsModule = moduleWrapper({
 
       const start = new Date(item.startDate);
       const end = new Date(item.endDate);
-      let currentYear = start.getFullYear();
+      let current = new Date(start.getFullYear() + 1, start.getMonth(), 0);
 
-      while (currentYear <= end.getFullYear()) {
-        const year = currentYear;
+      while (current <= end) {
+        const year = current.getFullYear();
         const rowDiv = document.createElement('div');
         rowDiv.className = 'grid-mortgage-yearly';
         
         const dateLabel = document.createElement('span');
         dateLabel.className = 'year-label';
-        dateLabel.textContent = `Dec ${year}`;
+        dateLabel.textContent = `${current.toLocaleString('default', { month: 'short' })} ${year}`;
 
         const lumpInput = document.createElement('input');
         lumpInput.type = 'number';
@@ -176,7 +176,7 @@ const predictorMovementsModule = moduleWrapper({
         rowDiv.appendChild(dateLabel);
         rowDiv.appendChild(lumpInput);
         dynamicContainer.appendChild(rowDiv);
-        currentYear++;
+        current = new Date(year + 1, current.getMonth(), current.getDate());
       }
     };
 
@@ -207,13 +207,54 @@ const predictorMovementsModule = moduleWrapper({
     container.appendChild(clone);
   };
 
+  const renderIncomeRow = (container, item, index, sectionKey) => {
+    const clone = document.getElementById('tpl-income-row').content.cloneNode(true);
+    const row = clone.querySelector('.movement-item');
+
+    // Reuse shared binding logic for label, amount, dates, recurrence
+    bindField(row, item, '.field-label', 'label');
+    bindField(row, item, '.field-amount', 'amount');
+    bindField(row, item, '.field-start', 'startDate');
+    bindField(row, item, '.field-end', 'endDate');
+    bindField(row, item, '.field-recurrence', 'recurrence', 'change');
+
+
+    // Populate and bind Destination Account only
+    const toAcc = row.querySelector('.field-to-account');
+    populateAccountSelect(toAcc);
+    toAcc.value = item.toAccount || '';
+    toAcc.onchange = (e) => { item.toAccount = e.target.value; onDataChange(); };
+
+    // Recurrence list population
+    const recSelect = row.querySelector('.field-recurrence');
+    RECURRENCE_LIST.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = r;
+      recSelect.appendChild(opt);
+    });
+    recSelect.value = item.recurrence || 'Monthly';
+
+    row.querySelector('.field-delete').onclick = () => removeMovement(sectionKey, index);
+    container.appendChild(clone);
+  };
+
+  // Helper for consistent field binding
+  const bindField = (row, item, selector, field, evt = 'input') => {
+    const el = row.querySelector(selector);
+    el.value = item[field] || '';
+    el[evt === 'input' ? 'oninput' : 'onchange'] = (e) => {
+      item[field] = e.target.value;
+      onDataChange();
+    };
+  };
+
   const renderAllMovementsSections = () => {
     const mappings = [
-      { key: 'income', container: 'section-income-list', renderer: renderMovementRow },
+      { key: 'income', container: 'section-income-list', renderer: renderIncomeRow },
       { key: 'regular', container: 'section-regular-list', renderer: renderMovementRow },
       { key: 'mortgage', container: 'section-mortgage-list', renderer: renderMortgageRow },
       { key: 'lifeEvents', container: 'section-life-event-list', renderer: renderMovementRow }
-    ];
+    ]
 
     mappings.forEach(map => {
       const container = document.getElementById(map.container);
