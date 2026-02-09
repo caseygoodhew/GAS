@@ -54,11 +54,61 @@ const predictorMovementsModule = moduleWrapper({
       }));
   }
 
+  const calculateNewMortgageEntry = () => {
+    let newItem;
+    const mortgages = appState.movements.mortgage;
+    const prev = mortgages.length > 0 ? mortgages[mortgages.length - 1] : null;
+
+    if (prev) {
+      const prevSummary = calculateMortgage(prev);
+      const prevStart = new Date(prev.startDate);
+      const prevEnd = new Date(prev.endDate);
+      const durationMs = prevEnd.getTime() - prevStart.getTime();
+
+      const newPrincipal = prevSummary.closing;
+      const newStart = new Date(prevEnd);
+      const newEnd = new Date(newStart.getTime() + durationMs);
+      const newRate = prev.rate;
+      const targetPayment = prevSummary.payment;
+
+      // FIX: Search from 1 year UPWARDS to find the shortest term 
+      // that doesn't exceed the previous monthly payment.
+      let bestYears = 40; 
+      if (newPrincipal > 0) {
+        for (let y = 1; y <= 40; y++) {
+          const p = calculateMonthlyPayment(newPrincipal, newRate, y);
+          if (p <= targetPayment) {
+            bestYears = y;
+            break; 
+          }
+        }
+      }
+
+      newItem = {
+        principal: parseFloat(newPrincipal.toFixed(2)),
+        years: bestYears,
+        rate: newRate,
+        startDate: newStart.toISOString().split('T')[0],
+        endDate: newEnd.toISOString().split('T')[0],
+        lumpSums: []
+      };
+    } else {
+      newItem = { principal: 0, years: 25, rate: 0, startDate: '', endDate: '', lumpSums: [] };
+    }
+
+    return newItem;
+  }
+
   const addMovement = (sectionType) => {
     const key = sectionType === 'life-event' ? 'lifeEvents' : sectionType;
-    const newItem = key === 'mortgage' 
-      ? { principal: 0, years: 10, rate: 0, startDate: '', endDate: '', lumpSums: {} }
-      : { label: '', amount: 0, fromAccount: '', toAccount: '', startDate: '', endDate: '', recurrence: 'Monthly' };
+    let newItem;
+
+    if (key === 'mortgage') {
+      newItem = calculateNewMortgageEntry();
+    } else {
+      // Default for regular income/expenses
+      newItem = { label: '', amount: 0, fromAccount: '', toAccount: '', startDate: '', endDate: '', recurrence: 'Monthly' };
+    }
     
     appState.movements[key].push(newItem);
     renderAllMovementsSections();
@@ -141,43 +191,165 @@ const predictorMovementsModule = moduleWrapper({
     container.appendChild(clone);
   };
 
+  /**
+   * Helper to calculate a standard amortization monthly payment
+   */
+  const calculateMonthlyPayment = (principal, annualRate, years) => {
+    if (principal <= 0 || years <= 0) return 0;
+    const monthlyRate = (parseFloat(annualRate) || 0) / 100 / 12;
+    const totalMonths = years * 12;
+    if (monthlyRate === 0) return principal / totalMonths;
+    return (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
+  };
+
+  /**
+   * Calculates mortgage summary values.
+   * Logic: Total Capital = Principal - Closing Balance.
+   * Total Paid = Total Monthly Payments + Total Lump Sums.
+   */
+  const calculateMortgage = (item) => {
+    const principal = parseFloat(item.principal) || 0;
+    const annualRate = (parseFloat(item.rate) || 0) / 100;
+    const years = parseFloat(item.years) || 0;
+    const startDate = item.startDate ? new Date(item.startDate) : null;
+    const endDate = item.endDate ? new Date(item.endDate) : null;
+
+    if (!principal || !years || !startDate || !endDate || endDate <= startDate) {
+      return { payment: 0, capital: 0, interest: 0, totalPaid: 0, closing: 0 };
+    }
+
+    const monthlyRate = annualRate / 12;
+    const monthlyPayment = calculateMonthlyPayment(principal, item.rate, years);
+
+    // Calculate duration in months
+    const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+    
+    let currentBalance = principal;
+    let totalInterest = 0;
+    let totalLumpSums = 0;
+    let totalMonthlyPayments = 0;
+
+    for (let i = 0; i < diffMonths; i++) {
+      if (currentBalance <= 0) break;
+
+      const interestForMonth = currentBalance * monthlyRate;
+      let capitalRepaid = monthlyPayment - interestForMonth;
+      let actualPayment = monthlyPayment;
+
+      // Handle final payment/overpayment
+      if (currentBalance < capitalRepaid) {
+        actualPayment = currentBalance + interestForMonth;
+        capitalRepaid = currentBalance;
+      }
+
+      totalInterest += interestForMonth;
+      totalMonthlyPayments += actualPayment;
+      currentBalance -= capitalRepaid;
+
+      // Check for Lump Sums in this month
+      const currentMonthDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+      const m = currentMonthDate.getMonth();
+      const y = currentMonthDate.getFullYear();
+
+      (item.lumpSums || []).forEach(ls => {
+        if (ls.date && currentBalance > 0) {
+          const lsDate = new Date(ls.date);
+          if (lsDate.getMonth() === m && lsDate.getFullYear() === y) {
+            let val = parseFloat(ls.amount) || 0;
+            // Rule: <= 100 is %, > 100 is £
+            let amount = val > 100 ? val : (currentBalance * (val / 100));
+            if (amount > currentBalance) amount = currentBalance;
+            
+            totalLumpSums += amount;
+            currentBalance -= amount;
+          }
+        }
+      });
+    }
+
+    return {
+      payment: monthlyPayment,
+      capital: principal - Math.max(0, currentBalance),
+      interest: totalInterest,
+      totalPaid: totalMonthlyPayments + totalLumpSums,
+      closing: Math.max(0, currentBalance)
+    };
+  };
+
   const renderMortgageRow = (container, item, index) => {
     const clone = document.getElementById('tpl-mortgage-row').content.cloneNode(true);
     const row = clone.querySelector('.mortgage-item');
     const dynamicContainer = row.querySelector('.mortgage-dynamic-rows');
 
-    const updateMortgageRows = () => {
+    const updateUIValues = () => {
+      const results = calculateMortgage(item);
+      console.logJSON(results);
+      const format = (val) => val.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      
+      row.querySelector('.field-summary-pay').textContent = `£${format(results.payment)}`;
+      row.querySelector('.field-summary-cap').textContent = `£${format(results.capital)}`;
+      row.querySelector('.field-summary-int').textContent = `£${format(results.interest)}`;
+      row.querySelector('.field-summary-total').textContent = `£${format(results.totalPaid)}`;
+      row.querySelector('.field-summary-close').textContent = `£${format(results.closing)}`;
+    };
+
+    const renderLumpSums = () => {
       dynamicContainer.innerHTML = '';
-      if (!item.startDate || !item.endDate) return;
-
-      const start = new Date(item.startDate);
-      const end = new Date(item.endDate);
-      let current = new Date(start.getFullYear() + 1, start.getMonth(), 0);
-
-      while (current <= end) {
-        const year = current.getFullYear();
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'grid-mortgage-yearly';
+      
+      (item.lumpSums || []).forEach((ls, lsIdx) => {
+        const div = document.createElement('div');
+        div.className = 'grid-mortgage-lump-row';
         
-        const dateLabel = document.createElement('span');
-        dateLabel.className = 'year-label';
-        dateLabel.textContent = `${current.toLocaleString('default', { month: 'short' })} ${year}`;
+        // Date Input
+        const dateInp = document.createElement('input');
+        dateInp.type = 'date';
+        dateInp.className = 'field-start'; // Reuse existing date styling
+        dateInp.value = ls.date || '';
+        dateInp.oninput = (e) => { ls.date = e.target.value; updateUIValues(); onDataChange(); };
 
-        const lumpInput = document.createElement('input');
-        lumpInput.type = 'number';
-        lumpInput.step = '0.01';
-        lumpInput.placeholder = 'Lump Sum %/£';
-        lumpInput.value = item.lumpSums[year] || '';
-        lumpInput.oninput = (e) => {
-          item.lumpSums[year] = e.target.value;
+        // Amount Input
+        const amtInp = document.createElement('input');
+        amtInp.type = 'number';
+        amtInp.placeholder = 'Amt £ or %';
+        amtInp.value = ls.amount || '';
+        amtInp.oninput = (e) => { ls.amount = e.target.value; updateUIValues(); onDataChange(); };
+
+        // Trash Can Delete Button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-icon';
+        delBtn.title = 'Remove Lump Sum';
+        delBtn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>`;
+        delBtn.onclick = () => {
+          item.lumpSums.splice(lsIdx, 1);
+          renderLumpSums();
+          updateUIValues();
           onDataChange();
         };
 
-        rowDiv.appendChild(dateLabel);
-        rowDiv.appendChild(lumpInput);
-        dynamicContainer.appendChild(rowDiv);
-        current = new Date(year + 1, current.getMonth(), current.getDate());
-      }
+        div.appendChild(dateInp);
+        div.appendChild(amtInp);
+        div.appendChild(delBtn);
+        dynamicContainer.appendChild(div);
+      });
+
+      // Circular Plus Button
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-lump';
+      addBtn.title = 'Add Lump Sum';
+      addBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>`;
+      addBtn.onclick = () => {
+        item.lumpSums.push({ date: '', amount: 0 });
+        renderLumpSums();
+      };
+      dynamicContainer.appendChild(addBtn);
     };
 
     const bind = (selector, field) => {
@@ -185,7 +357,7 @@ const predictorMovementsModule = moduleWrapper({
       el.value = item[field] || '';
       el.oninput = (e) => {
         item[field] = e.target.value;
-        if (field === 'startDate' || field === 'endDate') updateMortgageRows();
+        updateUIValues();
         onDataChange();
       };
     };
@@ -196,7 +368,8 @@ const predictorMovementsModule = moduleWrapper({
     bind('.field-start', 'startDate');
     bind('.field-end', 'endDate');
 
-    updateMortgageRows();
+    renderLumpSums();
+    updateUIValues();
 
     row.querySelector('.field-delete').onclick = () => {
       appState.movements.mortgage.splice(index, 1);
