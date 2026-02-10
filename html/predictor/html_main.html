@@ -2,15 +2,28 @@
 <html>
   <head>
     <base target="_top">
-    <?!= include('html/predictor/stylesheet'); ?>
+    <?!= include('html/predictor/css_main'); ?>
+    <?!= include('html/predictor/css_launcher'); ?>
+    <?!= include('html/predictor/css_debug'); ?>
+    <?!= include('html/predictor/css_registry'); ?>
+    <?!= include('html/predictor/css_movements'); ?>
   </head>
   <body>
 
     
     <div id="module-container" class="" data-active-module="">
       <header class="module-header">
-        <button id="back-home" class="btn-back" onclick="predictorModuleController.goHome()">←</button>
-        <button id="back-from-debug" class="btn-back hidden" onclick="predictorModuleController.goBackFromDebug()">←</button>
+        <button id="back-home" class="btn-back" onclick="predictorModuleController.goHome()">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+
+        <button id="back-from-debug" class="btn-back hidden" onclick="predictorModuleController.goBackFromDebug()">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
         
         <h2 id="current-module-title">Module</h2>
 

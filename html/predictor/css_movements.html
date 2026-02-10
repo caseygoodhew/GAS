@@ -1,0 +1,200 @@
+<style>
+/* Section headers matching Registry muted style */
+#module-movements h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+#module-movements .section-desc {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.movement-item, 
+.mortgage-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.movement-item:last-child, 
+.mortgage-item:last-child {
+  border-bottom: none;
+}
+
+/* --- Alignment Fix: Unified Grid Constraints --- */
+.grid-income-row1,
+.grid-movement-row1,
+.grid-movement-row2,
+.grid-movement-row3,
+.grid-mortgage-headers,
+.grid-mortgage-row1,
+.grid-mortgage-lump-row {
+  display: grid;
+  align-items: center;
+}
+
+/* The 'Gap 0' fix implies container width mismatch. 
+   These rules ensure Header and Row containers calculate 'fr' units identically.
+*/
+.grid-income-row1,
+.grid-movement-row1,
+.grid-mortgage-headers,
+.grid-mortgage-row1 {
+  gap: 16px;
+  padding-left: 0;
+  padding-right: 0;
+  /* Reserves space for scrollbar so headers align with rows in a scrollable list */
+  scrollbar-gutter: stable; 
+}
+
+/* Header specific styling */
+.grid-header,
+.grid-mortgage-headers {
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid #f1f3f4;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+/* --- Column Definitions --- */
+
+/* 1. Income Section */
+#income-list-container .grid-header,
+.grid-income-row1 {
+  grid-template-columns: 1fr 140px 220px 40px;
+}
+
+/* 2. Regular Movements Section */
+#regular-movements-container .grid-header,
+.grid-movement-row1 {
+  grid-template-columns: 1fr 140px 40px;
+}
+
+/* Sub-rows for Regular Movements (Indented) */
+.grid-movement-row2,
+.grid-movement-row3 {
+  margin-left: 28px;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.grid-movement-row2 {
+  grid-template-columns: 1fr 24px 1fr;
+}
+
+.grid-movement-row3 {
+  grid-template-columns: 1fr 1fr 1.2fr;
+}
+
+/* 3. Mortgage Section */
+.grid-mortgage-headers,
+.grid-mortgage-row1 {
+  grid-template-columns: 1fr 80px 80px 140px 140px 40px;
+}
+
+/* Sub-rows for Mortgages (Indented) */
+.grid-mortgage-lump-row {
+  grid-template-columns: 140px 100px 100px 1fr 40px;
+  margin-left: 28px;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+/* --- Field Utilities --- */
+.field-with-unit {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.unit-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.field-with-unit input {
+  padding-left: 20px !important;
+}
+
+.readonly-field {
+  background-color: #f1f3f4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  min-width: 60px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* --- Components & Indentation --- */
+.indent-row {
+  margin-left: 28px;
+  margin-top: 10px;
+}
+
+.grid-mortgage-summary {
+  display: grid;
+  grid-template-columns: 28px repeat(5, 1fr) 4px;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-top: 1px solid #eee;
+  margin-left: 0px;
+  background-color: #f1f3f4;
+}
+
+.summary-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-mortgage-summary .readonly-field {
+  background-color: color: var(--white);
+}
+
+.summary-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.section-sub-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.acc-col-action {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.arrow-separator {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+</style>

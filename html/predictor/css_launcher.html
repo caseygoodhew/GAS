@@ -1,0 +1,100 @@
+<style>
+#main-launcher {
+  width: 100%;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.dash-card {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-left-width: 6px;
+  border-radius: 8px;
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-card:hover {
+  transform: scale(1.005);
+  box-shadow: var(--shadow-google);
+}
+
+.card-registry {
+  border-left-color: var(--blue-base);
+}
+
+.card-registry .card-title {
+  color: var(--blue-base);
+}
+
+.card-registry:hover {
+  background-color: var(--blue-light);
+}
+
+.card-actuals {
+  border-left-color: var(--green-base);
+}
+
+.card-actuals .card-title {
+  color: var(--green-base);
+}
+
+.card-actuals:hover {
+  background-color: var(--green-light);
+}
+
+.card-movements {
+  border-left-color: var(--red-base);
+}
+
+.card-movements .card-title {
+  color: var(--red-base);
+}
+
+.card-movements:hover {
+  background-color: var(--red-light);
+}
+
+.card-predictions {
+  border-left-color: var(--yellow-base);
+}
+
+.card-predictions .card-title {
+  color: var(--yellow-base);
+}
+
+.card-predictions:hover {
+  background-color: var(--yellow-light);
+}
+
+.card-title {
+  font-weight: 500;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.dash-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 700px;
+}
+
+/* Hide navigation elements on Launcher Home */
+#module-container.for-module-launcher {
+  background-color: var(--white);
+}
+
+#module-container.for-module-launcher .module-header,
+#module-container.for-module-launcher .module-content-wrapper,
+#module-container.for-module-launcher .module-footer {
+  display: none;
+}
+</style>
