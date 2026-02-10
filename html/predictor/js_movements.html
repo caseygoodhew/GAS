@@ -215,28 +215,35 @@ const predictorMovementsModule = moduleWrapper({
     const endDate = item.endDate ? new Date(item.endDate) : null;
 
     if (!principal || !years || !startDate || !endDate || endDate <= startDate) {
-      return { payment: 0, capital: 0, interest: 0, totalPaid: 0, closing: 0 };
+      return { payment: 0, capital: 0, interest: 0, totalPaid: 0, closing: 0, balancesByDate: {} };
     }
 
     const monthlyRate = annualRate / 12;
     const monthlyPayment = calculateMonthlyPayment(principal, item.rate, years);
 
-    // Calculate duration in months
     const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
     
     let currentBalance = principal;
     let totalInterest = 0;
     let totalLumpSums = 0;
     let totalMonthlyPayments = 0;
+    
+    // Track balances by "YYYY-M" key for the UI conversion display
+    const balancesByDate = {};
 
     for (let i = 0; i < diffMonths; i++) {
       if (currentBalance <= 0) break;
+
+      // Store the balance at the start of this month before payments are applied
+      const currentMonthDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+      const m = currentMonthDate.getMonth();
+      const y = currentMonthDate.getFullYear();
+      balancesByDate[`${y}-${m}`] = currentBalance;
 
       const interestForMonth = currentBalance * monthlyRate;
       let capitalRepaid = monthlyPayment - interestForMonth;
       let actualPayment = monthlyPayment;
 
-      // Handle final payment/overpayment
       if (currentBalance < capitalRepaid) {
         actualPayment = currentBalance + interestForMonth;
         capitalRepaid = currentBalance;
@@ -246,17 +253,12 @@ const predictorMovementsModule = moduleWrapper({
       totalMonthlyPayments += actualPayment;
       currentBalance -= capitalRepaid;
 
-      // Check for Lump Sums in this month
-      const currentMonthDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
-      const m = currentMonthDate.getMonth();
-      const y = currentMonthDate.getFullYear();
-
       (item.lumpSums || []).forEach(ls => {
         if (ls.date && currentBalance > 0) {
           const lsDate = new Date(ls.date);
           if (lsDate.getMonth() === m && lsDate.getFullYear() === y) {
             let val = parseFloat(ls.amount) || 0;
-            // Rule: <= 100 is %, > 100 is £
+            // Balance used here is the balance AFTER the monthly scheduled payment
             let amount = val > 100 ? val : (currentBalance * (val / 100));
             if (amount > currentBalance) amount = currentBalance;
             
@@ -272,7 +274,8 @@ const predictorMovementsModule = moduleWrapper({
       capital: principal - Math.max(0, currentBalance),
       interest: totalInterest,
       totalPaid: totalMonthlyPayments + totalLumpSums,
-      closing: Math.max(0, currentBalance)
+      closing: Math.max(0, currentBalance),
+      balancesByDate: balancesByDate // Return the map for the renderer
     };
   };
 
@@ -281,16 +284,46 @@ const predictorMovementsModule = moduleWrapper({
     const row = clone.querySelector('.mortgage-item');
     const dynamicContainer = row.querySelector('.mortgage-dynamic-rows');
 
-    const updateUIValues = () => {
+    const formatReadOnly = (val) => 
+      Math.round(val || 0).toLocaleString('en-GB');
+
+    // Helper to update only the summary totals and the conversion text
+    // without rebuilding the DOM.
+    const updateDisplayOnly = () => {
       const results = calculateMortgage(item);
-      console.logJSON(results);
-      const format = (val) => val.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
       
-      row.querySelector('.field-summary-pay').textContent = `£${format(results.payment)}`;
-      row.querySelector('.field-summary-cap').textContent = `£${format(results.capital)}`;
-      row.querySelector('.field-summary-int').textContent = `£${format(results.interest)}`;
-      row.querySelector('.field-summary-total').textContent = `£${format(results.totalPaid)}`;
-      row.querySelector('.field-summary-close').textContent = `£${format(results.closing)}`;
+      row.querySelector('.field-summary-pay').textContent = `£${formatReadOnly(results.payment)}`;
+      row.querySelector('.field-summary-cap').textContent = `£${formatReadOnly(results.capital)}`;
+      row.querySelector('.field-summary-int').textContent = `£${formatReadOnly(results.interest)}`;
+      row.querySelector('.field-summary-total').textContent = `£${formatReadOnly(results.totalPaid)}`;
+      row.querySelector('.field-summary-close').textContent = `£${formatReadOnly(results.closing)}`;
+
+      // Update every lump sum conversion label based on the new calculation
+      const lumpRows = dynamicContainer.querySelectorAll('.grid-mortgage-lump-row');
+      lumpRows.forEach((lumpRow, idx) => {
+        const ls = item.lumpSums[idx];
+        const convDiv = lumpRow.querySelector('.field-lump-converted');
+        const unitSpan = lumpRow.querySelector('.unit-icon');
+        
+        const val = parseFloat(ls.amount) || 0;
+        let currentBalance = parseFloat(item.principal) || 0;
+        
+        if (ls.date) {
+          const d = new Date(ls.date);
+          const key = `${d.getFullYear()}-${d.getMonth()}`;
+          currentBalance = results.balancesByDate[key] || currentBalance;
+        }
+
+        unitSpan.textContent = val > 100 ? '£' : '%';
+
+        if (val > 100) {
+          const percent = currentBalance > 0 ? (val / currentBalance) * 100 : 0;
+          convDiv.textContent = `${percent.toFixed(1)}%`;
+        } else {
+          const cash = currentBalance * (val / 100);
+          convDiv.textContent = `£${formatReadOnly(cash)}`;
+        }
+      });
     };
 
     const renderLumpSums = () => {
@@ -300,83 +333,96 @@ const predictorMovementsModule = moduleWrapper({
         const div = document.createElement('div');
         div.className = 'grid-mortgage-lump-row';
         
-        // Date Input
+        // Date Input - Only triggers display update, not a full re-render
         const dateInp = document.createElement('input');
         dateInp.type = 'date';
-        dateInp.className = 'field-start'; // Reuse existing date styling
         dateInp.value = ls.date || '';
-        dateInp.oninput = (e) => { ls.date = e.target.value; updateUIValues(); onDataChange(); };
+        dateInp.oninput = (e) => { 
+          ls.date = e.target.value; 
+          updateDisplayOnly(); 
+          onDataChange(); 
+        };
 
-        // Amount Input
+        const amtWrapper = document.createElement('div');
+        amtWrapper.className = 'field-with-unit';
+        const unitSpan = document.createElement('span');
+        unitSpan.className = 'unit-icon';
+
+        // Amount Input - Only triggers display update
         const amtInp = document.createElement('input');
         amtInp.type = 'number';
-        amtInp.placeholder = 'Amt £ or %';
         amtInp.value = ls.amount || '';
-        amtInp.oninput = (e) => { ls.amount = e.target.value; updateUIValues(); onDataChange(); };
+        amtInp.oninput = (e) => { 
+          ls.amount = e.target.value; 
+          updateDisplayOnly(); 
+          onDataChange(); 
+        };
 
-        // Trash Can Delete Button
+        const convDiv = document.createElement('div');
+        convDiv.className = 'field-lump-converted readonly-field';
+
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-icon';
-        delBtn.title = 'Remove Lump Sum';
-        delBtn.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>`;
+        delBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
         delBtn.onclick = () => {
           item.lumpSums.splice(lsIdx, 1);
-          renderLumpSums();
-          updateUIValues();
+          renderLumpSums(); // Re-render required here because the list length changed
           onDataChange();
         };
 
+        amtWrapper.appendChild(unitSpan);
+        amtWrapper.appendChild(amtInp);
         div.appendChild(dateInp);
-        div.appendChild(amtInp);
+        div.appendChild(amtWrapper);
+        div.appendChild(convDiv);
         div.appendChild(delBtn);
         dynamicContainer.appendChild(div);
       });
 
-      // Circular Plus Button
       const addBtn = document.createElement('button');
       addBtn.className = 'btn-add-lump';
-      addBtn.title = 'Add Lump Sum';
-      addBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>`;
+      addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
       addBtn.onclick = () => {
+        if (!item.lumpSums) item.lumpSums = [];
         item.lumpSums.push({ date: '', amount: 0 });
-        renderLumpSums();
+        renderLumpSums(); // Re-render required here
       };
       dynamicContainer.appendChild(addBtn);
+      
+      // Initialize the labels for the first time
+      updateDisplayOnly();
     };
 
-    const bind = (selector, field) => {
+    // Binding for consolidated top-row fields
+    const bind = (selector, field, isNumeric = false) => {
       const el = row.querySelector(selector);
-      el.value = item[field] || '';
+      el.value = (field === 'principal') 
+        ? (parseFloat(item[field]) || 0).toLocaleString('en-GB') 
+        : (item[field] || '');
+
       el.oninput = (e) => {
-        item[field] = e.target.value;
-        updateUIValues();
+        let rawVal = e.target.value;
+        if (field === 'principal') rawVal = rawVal.replace(/,/g, '');
+        item[field] = isNumeric ? parseFloat(rawVal) : rawVal;
+        updateDisplayOnly();
         onDataChange();
       };
+
+      if (field === 'principal') {
+        el.onblur = (e) => {
+          const num = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+          e.target.value = num.toLocaleString('en-GB');
+        };
+      }
     };
 
-    bind('.field-principal', 'principal');
-    bind('.field-years', 'years');
-    bind('.field-rate', 'rate');
+    bind('.field-principal', 'principal', true);
+    bind('.field-years', 'years', true);
+    bind('.field-rate', 'rate', true);
     bind('.field-start', 'startDate');
     bind('.field-end', 'endDate');
 
     renderLumpSums();
-    updateUIValues();
-
-    row.querySelector('.field-delete').onclick = () => {
-      appState.movements.mortgage.splice(index, 1);
-      renderAllMovementsSections();
-      onDataChange();
-    };
-
     container.appendChild(clone);
   };
 

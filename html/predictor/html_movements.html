@@ -82,22 +82,38 @@
 
   <template id="tpl-mortgage-row">
     <div class="mortgage-item">
+      <div class="grid-mortgage-headers">
+        <span>Principal</span>
+        <span>Years</span>
+        <span>Rate</span>
+        <span>Start Date</span>
+        <span>End Date</span>
+        <span></span>
+      </div>
+
       <div class="grid-mortgage-row1">
-        <input type="number" step="0.01" class="field-principal" placeholder="Opening Loan Amount">
-        <input type="number" class="field-years" placeholder="Yrs">
-        <input type="number" step="0.01" class="field-rate" placeholder="Rate %">
+        <div class="field-with-unit">
+          <span class="unit-icon">£</span>
+          <input type="text" class="field-principal" placeholder="0">
+        </div>
+        <div class="field-with-unit">
+          <input type="number" class="field-years" placeholder="Yrs">
+        </div>
+        <div class="field-with-unit">
+          <span class="unit-icon">%</span>
+          <input type="number" step="0.01" class="field-rate" placeholder="0.00">
+        </div>
+        <div class="field-with-unit">
+          <input type="date" class="field-start">
+        </div>
+        <div class="field-with-unit">
+          <input type="date" class="field-end">
+        </div>
         <div class="acc-col-action">
           <button class="btn-icon field-delete" title="Remove">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
-      </div>
-      <div class="grid-mortgage-row2 indent-row">
-        <input type="date" class="field-start" title="Start Date">
-        <input type="date" class="field-end" title="End Date">
       </div>
       
       <div class="indent-row section-sub-label">Lump Sum Payments</div>
@@ -106,23 +122,23 @@
       <div class="grid-mortgage-summary indent-row">
         <div class="summary-block">
           <span class="summary-label">Payment</span>
-          <span class="summary-value field-summary-pay">£0.00</span>
+          <span class="summary-value field-summary-pay readonly-field">£0</span>
         </div>
         <div class="summary-block">
           <span class="summary-label">Capital</span>
-          <span class="summary-value field-summary-cap">£0.00</span>
+          <span class="summary-value field-summary-cap readonly-field">£0</span>
         </div>
         <div class="summary-block">
           <span class="summary-label">Interest</span>
-          <span class="summary-value field-summary-int">£0.00</span>
+          <span class="summary-value field-summary-int readonly-field">£0</span>
         </div>
         <div class="summary-block">
           <span class="summary-label">Total Paid</span>
-          <span class="summary-value field-summary-total">£0.00</span>
+          <span class="summary-value field-summary-total readonly-field">£0</span>
         </div>
         <div class="summary-block">
           <span class="summary-label">Closing</span>
-          <span class="summary-value field-summary-close">£0.00</span>
+          <span class="summary-value field-summary-close readonly-field">£0</span>
         </div>
       </div>
     </div>
